@@ -16,10 +16,13 @@ main = do
   putStrLn "Running part 1..."
   str <- readFile "Day14.txt"
   let solvedWalls1 = part1 str
-  putStrLn (show $ (length $ S.elems solvedWalls1) - (length $ S.elems (wallSet str)))
+  putStrLn (show $ (n solvedWalls1) - (n $ wallSet str))
   putStrLn "Running part 2..."
   let solvedWalls2 = part2 str
-  putStrLn (show $ (length $ S.elems solvedWalls2) - (length $ S.elems (wallSet str)))
+  putStrLn (show $ (n solvedWalls2) - (n  $ wallSet str))
+
+n :: S.Set a -> Int
+n = length . S.elems
 
 example = "498,4 -> 498,6 -> 496,6\n503,4 -> 502,4 -> 502,9 -> 494,9"
 
