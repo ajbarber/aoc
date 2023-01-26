@@ -54,6 +54,3 @@ cyclePoints xs [] = []
 cyclePoints xs (c:cs) =  c * snd (head xs') : cyclePoints xs' cs
    where
      xs' = dropWhile ((>c) . fst) xs
-
-
--- part1 ::

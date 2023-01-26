@@ -91,6 +91,3 @@ testGrid = V.fromList $ V.fromList <$> [ [Start, Elevation 124, Elevation 123],
 
 prop_grid :: Bool
 prop_grid =  let f@([Path (p,s) _]) = bfs testGrid (SQ.singleton start) ST.empty in trace (show f) s == 4
-
--- prop_neighbours :: Bool
--- prop_neighbours = filter (((<=) (succ <$> now) . snd)) [((0,1), Elevation 124), ((0,1), Elevation 121)]
