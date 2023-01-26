@@ -13,10 +13,13 @@ import Test.QuickCheck
 
 main :: IO ()
 main = do
-  putStrLn "Running..."
+  putStrLn "Running part 1..."
   str <- readFile "Day14.txt"
-  let solvedWalls = solve str
-  putStrLn (show $ (length $ S.elems solvedWalls) - (length $ S.elems (wallSet str)))
+  let solvedWalls1 = part1 str
+  putStrLn (show $ (length $ S.elems solvedWalls1) - (length $ S.elems (wallSet str)))
+  putStrLn "Running part 2..."
+  let solvedWalls2 = part2 str
+  putStrLn (show $ (length $ S.elems solvedWalls2) - (length $ S.elems (wallSet str)))
 
 example = "498,4 -> 498,6 -> 496,6\n503,4 -> 502,4 -> 502,9 -> 494,9"
 
@@ -43,7 +46,7 @@ interpolated (m1, n1) (m2, n2) =
 range :: Int -> Int -> [Int]
 range m1 m2 = [ a | a <- [min m1 m2 .. max m1 m2]  ]
 
-data CState = CState { walls :: S.Set (Int, Int), pos :: (Int, Int) }
+data CState = CState { walls :: S.Set (Int, Int), pos :: (Int, Int), yMax :: Int }
 
 ws :: String -> [[(Int, Int)]]
 ws str = fmap (fmap tuples) $ parseLine . words <$> lines str
@@ -51,22 +54,30 @@ ws str = fmap (fmap tuples) $ parseLine . words <$> lines str
 wallSet :: String -> S.Set (Int, Int)
 wallSet str  = S.fromList $ concatMap (\line -> concatMap (uncurry interpolated) $ zip line (tail line)) (ws str)
 
-solve :: String -> S.Set (Int, Int)
-solve str = walls . snd $ runState (iterateUntil ((> mMax) . snd) step) (CState { walls=wallSet str, pos=(500,0)})
+findyMax str = S.findMax  $ S.map snd (wallSet str)
+
+part1 :: String -> S.Set (Int, Int)
+part1 str = walls . snd $ runState (iterateUntil ((> yMax) . snd) step) (CState { walls=wallSet str, pos=(500,0), yMax=yMax + 2})
    where
-      mMax = S.findMax  $ S.map snd (wallSet str)
+     yMax = findyMax str
+
+part2 :: String -> S.Set (Int, Int)
+part2 str = walls $ until (S.member (500,0) . walls) (execState step) (CState { walls=wallSet str, pos=(500,0), yMax=findyMax str + 2})
 
 step :: State CState (Int, Int)
 step = do
-  CState {..} <- get
+  s@CState {..} <- get
   let (m, n) = pos
   let [d, dl, dr] = [ (m, n+1), (m-1, n+1), (m+1,n+1) ]
-  if | S.notMember d walls -> save walls d -- down
-     | S.notMember dl walls -> save walls dl -- down left
-     | S.notMember dr walls -> save walls dr --down right
-     | otherwise -> trace "saving wall" save (S.insert pos walls) (500,0) -- sand becomes a wall, restart
+  if | validMove d s -> save walls d -- down
+     | validMove dl s -> save walls dl -- down left
+     | validMove dr s-> save walls dr --down right
+     | otherwise -> save (S.insert pos walls) (500,0) -- sand becomes a wall, restart
   where
-    save walls p = trace ("saving" <> show p) p <$ (put $ CState walls p)
+    save walls p  = p <$ modify (\x ->x{walls=walls, pos=p})
+
+validMove :: (Int, Int) -> CState ->  Bool
+validMove p@(x,y) s = S.notMember p (walls s) && y < (yMax s)
 
 propParseLine :: Bool
 propParseLine = parseLine (words ("1,2 -> 2,3"))  == ["1,2", "2,3"]
