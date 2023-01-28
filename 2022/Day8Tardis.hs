@@ -13,7 +13,9 @@ import Data.Tuple
 import Control.Monad.Tardis
 
 main :: IO ()
-main = print $ solve (parse example)
+main = do
+  str <- readFile "Day8.txt"
+  print $ solve (parse str)
 
 parse :: String -> [[Int]]
 parse = map (map digitToInt) . lines
@@ -29,7 +31,7 @@ orr :: [[Bool]] -> [[Bool]] -> Int
 orr grid1 grid2 = sum $ zipWith zipRow grid1 grid2
 
 zipRow :: [Bool] -> [Bool] -> Int
-zipRow row1 row2 = trace ((show row1) <> ":" <> (show row2)) length . filter (==True) $ zipWith (||) row1 row2
+zipRow row1 row2 = length . filter (==True) $ zipWith (||) row1 row2
 
 horiStates :: Traversable t => [t Int] -> [[Bool]]
 horiStates = map rowState
@@ -41,7 +43,6 @@ rowState row = uncurry (zipWith ((||) `on` snd )) $ fmap reverse $ flip execTard
 
 test :: (MonadTardis [(Int, Bool)] [(Int, Bool)] m) => Int -> m ()
 test cur = do
-  --traceM (show cur)
   -- forwards travelling
   past <- getPast
   let pm = safeHead past
@@ -51,10 +52,7 @@ test cur = do
      sendPast ((max (fst fm) cur, cur > fst fm):fut) -- first next is the next getFuture. cur just goes backwards.
      fut <- getFuture  -- takes the value from the next sendpast
      let fm = safeHead fut
-
-  --traceM (show $ fst pm)
   return ()
-
 
 safeHead :: (Num a) => [(a, Bool)] -> (a, Bool)
 safeHead = fromMaybe (-1, False) . (fmap fst <$> uncons)

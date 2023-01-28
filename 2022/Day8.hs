@@ -8,9 +8,8 @@ import Data.Tuple
 
 main :: IO ()
 main = do
-  print (parse example)
-  print (toNum $ solve (coords $ parse example) M.empty)
-  print (toNum $ flip execState M.empty $ solveS (coords $ parse example))
+  str <- readFile "Day8.txt"
+  print (toNum $ flip execState M.empty $ solveS (coords $ parse str))
 
 parse :: String -> [[Int]]
 parse = map (map digitToInt) . lines
