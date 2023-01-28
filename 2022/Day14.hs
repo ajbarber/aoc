@@ -52,20 +52,24 @@ range m1 m2 = [ a | a <- [min m1 m2 .. max m1 m2]  ]
 data CState = CState { walls :: S.Set (Int, Int), pos :: (Int, Int), yMax :: Int }
 
 ws :: String -> [[(Int, Int)]]
-ws str = fmap (fmap tuples) $ parseLine . words <$> lines str
+ws = fmap (fmap tuples) . ((parseLine . words) <$>) . lines
 
 wallSet :: String -> S.Set (Int, Int)
-wallSet str  = S.fromList $ concatMap (\line -> concatMap (uncurry interpolated) $ zip line (tail line)) (ws str)
+wallSet = S.fromList . ((uncurry interpolated =<<) . ap zip tail =<<) . ws
 
-findyMax str = S.findMax  $ S.map snd (wallSet str)
+findyMax :: String -> Int
+findyMax = S.findMax . S.map snd . wallSet
 
 part1 :: String -> S.Set (Int, Int)
-part1 str = walls . snd $ runState (iterateUntil ((> yMax) . snd) step) (CState { walls=wallSet str, pos=(500,0), yMax=yMax + 2})
-   where
-     yMax = findyMax str
+part1 str = walls . snd $ flip runState (CState { walls=wallSet str, pos=(500,0), yMax=yMax + 2}) $ do
+  iterateUntil ((> yMax) . snd) step
+  where
+    yMax = findyMax str
 
 part2 :: String -> S.Set (Int, Int)
-part2 str = walls $ until (S.member (500,0) . walls) (execState step) (CState { walls=wallSet str, pos=(500,0), yMax=findyMax str + 2})
+part2 str = walls $ until (S.member (500,0) . walls) (execState step) initState
+  where
+    initState = CState { walls=wallSet str, pos=(500,0), yMax=findyMax str + 2}
 
 step :: State CState (Int, Int)
 step = do
@@ -81,6 +85,8 @@ step = do
 
 validMove :: (Int, Int) -> CState ->  Bool
 validMove p@(x,y) s = S.notMember p (walls s) && y < (yMax s)
+
+-- Tests
 
 propParseLine :: Bool
 propParseLine = parseLine (words ("1,2 -> 2,3"))  == ["1,2", "2,3"]
