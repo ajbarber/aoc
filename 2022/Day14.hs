@@ -1,12 +1,15 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE MultiWayIf #-}
+
+module Day14 where
+
 import Prelude
 import Control.Monad.Loops
 import Control.Monad.State
 import Data.Char
 import Data.List
 import Data.Maybe
-import Data.Set qualified as S
+import qualified Data.Set as S
 import Debug.Trace
 
 import Test.QuickCheck
@@ -14,7 +17,7 @@ import Test.QuickCheck
 main :: IO ()
 main = do
   putStrLn "Running part 1..."
-  str <- readFile "Day14.txt"
+  str <- readFile "2022/Day14.txt"
   let solvedWalls1 = part1 str
   putStrLn (show $ (n solvedWalls1) - (n $ wallSet str))
   putStrLn "Running part 2..."
@@ -80,8 +83,9 @@ step = do
      | validMove dl s -> save walls dl -- down left
      | validMove dr s-> save walls dr --down right
      | otherwise -> save (S.insert pos walls) (500,0) -- sand becomes a wall, restart
-  where
-    save walls p  = p <$ modify (\x ->x{walls=walls, pos=p})
+
+save :: S.Set (Int, Int) -> (Int, Int) -> State CState (Int, Int)
+save walls p  = p <$ modify (\x ->x{walls=walls, pos=p})
 
 validMove :: (Int, Int) -> CState ->  Bool
 validMove p@(x,y) s = S.notMember p (walls s) && y < (yMax s)

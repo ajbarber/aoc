@@ -1,3 +1,5 @@
+module Day17 where
+
 import Prelude
 import Control.Applicative
 import Control.Monad.State
@@ -6,7 +8,7 @@ import Data.Either
 import Data.List
 import Data.Function
 import Data.Maybe
-import Data.Set qualified as S
+import qualified Data.Set as S
 import Debug.Trace
 
 import Test.QuickCheck

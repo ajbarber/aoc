@@ -1,3 +1,6 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+module Day23 where
+
 import Prelude
 
 import Control.Arrow
@@ -6,7 +9,7 @@ import Control.Monad.State
 import Control.Monad.Fail
 import Data.Function
 import Data.List
-import Data.Set qualified as S
+import qualified Data.Set as S
 import Data.Maybe
 import Data.Proxy
 import Data.Traversable
@@ -24,7 +27,6 @@ type Round = (Elves, Orientations)
 main :: IO ()
 main = do
   let matrix = lines example
- -- putStrLn . show $ matrix !! 1 !! 2
   let grid = gridToSet (parsed matrix) S.empty
   putStrLn $ show grid
   putStrLn $ show matrix

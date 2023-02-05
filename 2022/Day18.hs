@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleContexts #-}
+module Day18 where
+
 import Prelude
 
 import Control.Applicative
@@ -6,15 +9,15 @@ import Control.Monad.State.Strict
 import Data.Char
 import Data.List.Extra
 import Data.Maybe
-import Data.Set qualified as S
-import Data.Sequence qualified as SQ
+import qualified Data.Set as S
+import qualified Data.Sequence as SQ
 import Data.Foldable
 import Debug.Trace
 import Test.QuickCheck
 
 main :: IO ()
 main = do
-  str <- readFile "Day18.txt"
+  str <- readFile "2022/Day18.txt"
   --let str = example
   putStrLn $ show $ part1 (parsed str)
   putStrLn "Solving part 2"

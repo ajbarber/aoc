@@ -1,9 +1,11 @@
+module Day10 where
+
 import Prelude
 import Control.Monad.State
     ( forM_, modify, execState, MonadState(get), State )
 import Data.Char ()
 import Data.List ( find )
-import Data.List.NonEmpty qualified as NE
+import qualified Data.List.NonEmpty as NE
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Maybe ( isJust )
 import Debug.Trace ()
@@ -11,7 +13,7 @@ data Instr = Add Int | Noop deriving Show
 
 main :: IO ()
 main = do
-  str <- readFile "Day10.txt"
+  str <- readFile "2022/Day10.txt"
   putStrLn "Waiting for puzzle input:"
   putStrLn (show . solve . parse $ str)
   putStrLn "Finished"

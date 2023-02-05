@@ -1,14 +1,16 @@
+module Day8 where
+
 import Prelude
 import Control.Monad.State
 import Data.Char (digitToInt)
 import Data.List
-import Data.Map qualified as M
+import qualified Data.Map as M
 import Data.Foldable ( traverse_ )
 import Data.Tuple
 
 main :: IO ()
 main = do
-  str <- readFile "Day8.txt"
+  str <- readFile "2022/Day8.txt"
   print (toNum $ flip execState M.empty $ solveS (coords $ parse str))
 
 parse :: String -> [[Int]]
@@ -34,7 +36,7 @@ solveHori g m = foldl visibleLeft m g
 coords :: [[Int]] -> Grid
 coords grid = map (\(row, elem) -> [((row,j), (grid !! row) !! j) | j <- [0..n - 1]]) (zip [0..m - 1] grid)
   where
-    n = length $ grid !! 0
+    n = length . head $ grid
     m = length grid
 
 solveEachEnd :: Grid -> Table -> Table
@@ -42,7 +44,7 @@ solveEachEnd grid m = solveHori (reverse <$> grid) (solveHori grid m)
 
 -- to solve vertical, transpose the grid and solve horizontal problem
 solve :: Grid -> Table -> Table
-solve grid t = (solveEachEnd . transpose) grid $ (solveEachEnd grid t)
+solve grid t = (solveEachEnd . transpose) grid $ solveEachEnd grid t
 
 toNum :: Table -> Int
 toNum table = length $ filter id (M.elems table)

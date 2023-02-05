@@ -1,3 +1,5 @@
+module Day9 where
+
 import Prelude
 import Linear.V2
 import Control.Arrow
@@ -14,7 +16,7 @@ example = "R 4\nU 4\nL 3\nD 1\nR 4\nD 1\nL 5\nR 2"
 type Input = [Direction]
 
 main = do
-  contents <- readFile "day9.txt"
+  contents <- readFile "2022/Day9.txt"
   traverse print $ scanl (+) (V2 0 0) (parse contents)
   print $ solve $ parse contents
 

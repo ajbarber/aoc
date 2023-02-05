@@ -1,4 +1,8 @@
 {-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE FlexibleContexts #-}
+
+module Day8Tardis where
+
 import Prelude
 import Control.Applicative
 import Control.Arrow
@@ -14,7 +18,7 @@ import Control.Monad.Tardis
 
 main :: IO ()
 main = do
-  str <- readFile "Day8.txt"
+  str <- readFile "2022/Day8.txt"
   print $ solve (parse str)
 
 parse :: String -> [[Int]]

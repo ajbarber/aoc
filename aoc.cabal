@@ -1,0 +1,57 @@
+cabal-version:      2.4
+name:               aoc
+version:            0.1.0.0
+
+-- A short (one-line) description of the package.
+-- synopsis:
+
+-- A longer description of the package.
+-- description:
+
+-- A URL where users can report bugs.
+-- bug-reports:
+
+-- The license under which the package is released.
+-- license:
+author:             Adam Barber
+maintainer:         barberadam995@gmail.com
+
+-- A copyright notice.
+-- copyright:
+-- category:
+extra-source-files: CHANGELOG.md
+
+executable aoc
+    main-is:          Main.hs
+
+    -- Modules included in this executable, other than Main.
+    -- other-modules:
+    other-modules:
+        Day8
+      , Day8Tardis
+      , Day9
+      , Day10
+      , Day10_2
+      , Day11
+      , Day12
+      , Day13
+      , Day14
+      , Day17
+      , Day18
+      , Day23
+
+    -- LANGUAGE extensions used by modules in this package.
+    -- other-extensions:
+    build-depends:    base ^>=4.17.0.0,
+                      vector ^>=0.13.0.0,
+                      QuickCheck ^>=2.14.2,
+                      containers ^>=0.6.6,
+                      transformers ^>= 0.5.6.2,
+                      mtl ^>=2.2.2,
+                      lens ^>=5.2,
+                      extra ^>=1.7.12,
+                      monad-loops ^>=0.4.3,
+                      tardis ^>=0.4.4,
+                      linear ^>=1.22
+    hs-source-dirs:   2022
+    default-language: Haskell2010

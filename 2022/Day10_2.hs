@@ -1,3 +1,5 @@
+module Day10_2 where
+
 import Prelude
 
 import Control.Applicative
@@ -11,7 +13,7 @@ import Control.Monad.State
       StateT )
 import Control.Monad (void, guard)
 import Control.Monad.Writer.Class
-import Control.Monad.Trans.Writer.CPS qualified as CPS
+import qualified Control.Monad.Trans.Writer.CPS as CPS
 import Control.Monad.Writer
     ( WriterT, execWriter, execWriterT, Writer )
 import Data.Foldable
@@ -31,7 +33,7 @@ parse = map (instr . words) . lines
 
 main :: IO ()
 main = do
-  str <- readFile "Day10.txt"
+  str <- readFile "2022/Day10.txt"
   putStrLn "Part 1:"
   putStrLn (show . part1 . parse $ str)
   putStrLn "Part 2:"

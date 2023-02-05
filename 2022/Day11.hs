@@ -1,5 +1,10 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RankNTypes #-}
+
+module Day11 where
+
 import Prelude
 import Control.Arrow ((<<<))
 import Control.Lens.At
@@ -7,15 +12,14 @@ import Control.Lens.Each
 import Control.Lens.Getter
 import Control.Lens.Setter
 import Control.Lens.TH
-import Control.Monad (forM_)
 import Control.Monad.State.Strict
 import Control.Monad.State.Class
 import Control.Monad
 import Data.Function
 import Data.List.Extra (splitOn)
 import Data.Maybe (fromMaybe)
-import Data.IntMap qualified as M
-import Data.List (uncons)
+import qualified Data.IntMap as M
+import Data.List (uncons, sort)
 import Data.Traversable (for, traverse)
 import Data.Foldable (foldl', foldMap', for_, traverse_)
 import Debug.Trace ( traceShow, trace )
@@ -34,12 +38,11 @@ makeLenses ''MonkeyState
 
 main :: IO ()
 main = do
-  monkeys <- map parse . splitBlocks <$> readFile "day11.txt"
-  putStrLn $ show monkeys
+  monkeys <- map parse . splitBlocks <$> readFile "2022/Day11.txt"
   let n = length monkeys
   let monkeyMap = M.fromList $ zip [0..] monkeys
   let intMap = M.fromList $ zip [0..n] (replicate n 0)
-  putStrLn . show $ (execState (replicateM_ 20 doRoundL) (MonkeyState monkeyMap intMap))
+  putStrLn . show $ foldr (*) 1 . take 2 . reverse . sort . M.elems $ _counts (execState (replicateM_ 20 doRoundL) (MonkeyState monkeyMap intMap))
 
 instance Show Monkey where
   show (Monkey id si op db tt ft) = "id:" ++ show id ++ "|" ++
@@ -77,8 +80,6 @@ worry Monkey {..} i = _operation i `div` 3
 
 splitBlocks :: String -> [String]
 splitBlocks = splitOn "\n\n"
-
-test = S.singleton
 
 parse :: String -> Monkey
 parse block = foldr parseLn (Monkey 0 [] id 0 0 0) (lines block)
