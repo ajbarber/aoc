@@ -78,17 +78,17 @@ main :: IO ()
 main = do
   chunks <- splitOn "\n\n" <$> readFile "2022/Day13.txt"
   let part1 = sum . fmap fst . filter snd . zip [1..] $ doCmp . lines <$> chunks
-  let part2L = sortBy order $ (flip parse [] <$> concatMap lines chunks) <> dividers
-  print $ zip [1..] part2L
-  let part2 = (fromMaybe 0 (elemIndex divider1 part2L) + 1) * (fromMaybe 0 (elemIndex divider2 part2L) + 1)
+  let xs = sortBy order $ (flip parse [] <$> concatMap lines chunks) <> dividers
+  let part2 = (*) <$> ((1+) <$> elemIndex d1 xs) <*> ((1+) <$> elemIndex d2 xs)
   putStrLn ("Part 1:"<> show part1)
   putStrLn ("Part 2:"<> show part2)
 
-divider1 = parse "[[2]]" []
-divider2 = parse "[[6]]" []
+-- | The two dividers supplied
+d1 = parse "[[2]]" []
+d2 = parse "[[6]]" []
 
 dividers :: [Node Int]
-dividers = [ divider1, divider2 ]
+dividers = [ d1, d2 ]
 
 doCmp :: [String] -> Bool
 doCmp (x:y:_) = comp (parse x []) (parse y []) == Right True
