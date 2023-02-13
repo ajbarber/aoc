@@ -32,6 +32,11 @@ order n1 n2 = case comp n1 n2 of
   Right False -> GT
   Left _ -> GT
 
+-- Parsing can be done in one pass
+-- Idea is push each new [] onto a stack.
+-- then for each ] pop off 2nd and 1st and nest 2nd [ 1st] as the new head, then recurse
+-- See example stack trace
+
 -- [1,[2,[3,[4,[5,6,7]]]],8,9]
 -- [1,[2,[3,[4,[5,6,0]]]],8,9]
 
@@ -55,10 +60,6 @@ order n1 n2 = case comp n1 n2 of
 -- parse "]"  [List [1, List [2, List [3, List [4, List [5,6,7]]]],Leaf 8, Leaf 9]]
 -- = List [1, List [2, List [3, List [4, List [5,6,7]]]],Leaf 8, Leaf 9]
 
--- Parsing can be done in one pass
--- Idea is push each new [] onto a stack.
--- then for each ] pop off 2nd and 1st and nest 2nd [ 1st] as the new head, then recurse
--- See example stack trace above
 parse :: String -> [Node Int] -> Node Int
 parse ('[':xs) a = parse xs (List [] : a)
 parse (']':xs) (r1 : List r2 : rest) = parse xs (List (r2 ++ [r1]):rest)
@@ -67,10 +68,6 @@ parse (',':xs) a = parse xs a
 parse ('1':'0':xs) ((List a) : as) = parse xs (List (a ++ [Leaf 10]) : as)
 parse (x:xs) ((List a) : as) = parse xs (List (a ++ [Leaf $ digitToInt x]) : as)
 parse [] res = head res
-
--- [1,[2,[3,[4,[5,6,7]]]],8,9]
--- 1,[2,[3,[4,[5,6,7]]]],8,9
--- [1,2,3]
 
 -- Interesting aside: you can cobble together string
 -- literals of ADTs and use deriving Read
