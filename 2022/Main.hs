@@ -7,6 +7,7 @@ import Day10 (main)
 import Day10_2 (main)
 import Day11 (main)
 import Day12 (main)
+import Day13 (main)
 import Day14 (main)
 import Day17 (main)
 import Day18 (main)
@@ -21,6 +22,7 @@ main = do
   Day10_2.main
   Day11.main
   Day12.main
+  Day13.main
   Day14.main
   Day17.main
   Day18.main
