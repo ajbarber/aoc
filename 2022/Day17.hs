@@ -2,7 +2,9 @@ module Day17 where
 
 import Prelude
 import Control.Applicative
-import Control.Monad.State
+import Control.Monad.Extra hiding (anyM)
+import Control.Monad.State.Strict
+import Control.Monad.Loops hiding (whileM)
 import Data.Bifunctor
 import Data.Either
 import Data.List
@@ -42,7 +44,7 @@ parsed = lines
 -- m - num rows
 -- n - num cols
 bounds :: [[Char]] -> (Int, Int)
-bounds matrix = (length matrix, length $ matrix !! 0)
+bounds matrix = (length matrix, length $ head matrix)
 
 data RockType = One|Two|Three|Four|Five
 type Dist = Int
@@ -50,17 +52,63 @@ data Chamber = Chamber { chamber :: S.Set (Int, Int), pattern :: String } derivi
 
 main :: IO ()
 main = do
-  let Chamber s _ = execState (forM_ (parsed <$> take 2022 initialRocks) turn) initialChamber
-  putStrLn $ show $ S.findMax $ S.map fst s
+  print "Part 1"
+  print $ height 0 2022
+  let (mtpl, Chamber s2 p) = runState (mapM turn (parsed <$> take 8000 initialRocks)) initialChamber
+      (f, s, t') = fromMaybe (0,0, -1) $ longestCycle mtpl
+      t=t'+1
+      cycleHeight1 = height 0 f
+      cycleHeight2 = height t s
+      cycleHeight = cycleHeight2 - cycleHeight1
+      (d,r) = 1000000000000 `divMod` (s - f)
+      answer = height 0 r + (d * cycleHeight)
+  print "Part 2"
+  print answer
+
+-- | height of tower after i blocks,
+-- with offset of k applied to yield starting block of j+k
+height :: Int -> Int -> Int
+height k i =
+  let Chamber s _ = execState (forM_ (parsed <$> take i (revolveN k initialRocks)) turn) initialChamber
+  in S.findMax $ S.map fst s
 
 mapWithIndex :: (Num b1, Enum b1) => (a -> b1 -> b2) -> [a] -> [b2]
-mapWithIndex f xs = map (uncurry f) (zip xs [0..])
+mapWithIndex f xs = zipWith f xs [0..]
+
+longestCycle :: [([Bool], [[Char]])] -> Maybe (Int, Int, Int)
+longestCycle moves = foldr ((<|>) . cycleWithVal moves) Nothing moves
+
+cycleWithVal :: [([Bool], [[Char]])] -> ([Bool], [[Char]]) -> Maybe (Int, Int, Int)
+cycleWithVal xs x =
+  let res = filter (\(i,z) -> z == x) (zip [0..] xs)
+      (i,(a,b)) = head res
+      ds = differences (map fst res) in
+  if length res > 3 && (maximum ds == minimum ds)
+  then
+    Just (i, fst $ head . tail $ res, fromMaybe (-1) $ elemIndex b (parsed <$> initialRocks))
+  else
+    Nothing
+
+differences :: [Int] -> [Int]
+differences arr@(x:xs) = zipWith (flip (-)) arr xs
 
 initialRocks :: [String]
 initialRocks = cycle [rock1, rock2, rock3, rock4, rock5]
 
+revolve :: [String] -> [String]
+revolve xs = tail xs ++ [head xs]
+
+revolveN :: Int -> [String] -> [String]
+revolveN 0 xs = xs
+revolveN i xs = revolveN (i-1) (revolve xs)
+
 initialChamber :: Chamber
 initialChamber = Chamber (S.fromList [(0,0), (0,1), (0,2), (0,3), (0,4), (0,5), (0,6)]) (intersperse '.' $ cycle jetPattern)
+
+topRow :: S.Set (Int, Int) -> [Bool]
+topRow s = let (_, yMax) = yBounds s in row yMax ++ row (yMax-1) ++ row (yMax -2)
+   where
+     row y = (\x -> S.member (y,x) s) <$> [0..6]
 
 flatten :: [[Char]] -> [(Int, Int)]
 flatten grid = [ (-m,n) | m <- [0..bm-1], n <- [0..bn-1],
@@ -71,10 +119,16 @@ flatten grid = [ (-m,n) | m <- [0..bm-1], n <- [0..bn-1],
 rock :: [[Char]] -> S.Set (Int, Int)
 rock = S.fromList . flatten
 
+xBounds :: S.Set (Int, Int) -> (Int, Int)
+xBounds c = (S.findMin $ S.map snd c, S.findMax $ S.map snd c)
+
+yBounds :: S.Set (Int, Int) -> (Int, Int)
+yBounds c = (S.findMin $ S.map fst c, S.findMax $ S.map fst c)
+
 shock :: Int -> Int -> S.Set (Int, Int) -> S.Set (Int, Int)
 shock mOffset nOffset s = S.map (bimap (+mOffset) sideOffset) s
    where
-     (mMin, mMax) = (S.findMin $ S.map snd s, S.findMax $ S.map snd s)
+     (mMin, mMax) = xBounds s
      sideOffset = if mMin == 0 && nOffset < 0 || mMax == 6 && nOffset > 0
                   then id
                   else (+nOffset)
@@ -137,7 +191,7 @@ check chamber s = if S.null $ S.intersection s chamber then Just s else Nothing
 --    Left  l >>= _ = Left l
 --    Right r >>= k = k r
 --
-turn :: [[Char]] -> State Chamber ()
+turn :: [[Char]] -> State Chamber ([Bool], [[Char]])
 turn grid = do
   Chamber chamber jet <- get
   -- get rock start value TL, return rock set
@@ -146,7 +200,10 @@ turn grid = do
       f (b,i) a = case check chamber (move b a) of
         Nothing -> if a == '.' then Left (b, i+1) else Right (b, i+1) --skip l/right move
         Just m -> Right (move b a, i+1)
-  put $ Chamber (chamber `S.union` moves) (drop i jet)
+      chamber' = chamber `S.union` moves
+      jet' = drop i jet
+  put $ Chamber chamber' jet'
+  pure (topRow chamber', grid)
 
 -- Tests -------
 propRockBounds :: Bool
