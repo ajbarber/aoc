@@ -54,7 +54,7 @@ main :: IO ()
 main = do
   print "Part 1"
   print $ height 0 2022
-  let (mtpl, Chamber s2 p) = runState (mapM turn (parsed <$> take 8000 initialRocks)) initialChamber
+  let (mtpl, Chamber s2 p) = runState (mapM turn (parsed <$> take 6000 initialRocks)) initialChamber
       (f, s, t') = fromMaybe (0,0, -1) $ longestCycle mtpl
       t=t'+1
       cycleHeight1 = height 0 f
@@ -82,12 +82,9 @@ cycleWithVal :: [([Bool], [[Char]])] -> ([Bool], [[Char]]) -> Maybe (Int, Int, I
 cycleWithVal xs x =
   let res = filter (\(i,z) -> z == x) (zip [0..] xs)
       (i,(a,b)) = head res
-      ds = differences (map fst res) in
-  if length res > 3 && (maximum ds == minimum ds)
-  then
-    Just (i, fst $ head . tail $ res, fromMaybe (-1) $ elemIndex b (parsed <$> initialRocks))
-  else
-    Nothing
+      ds = differences (map fst res) in do
+  guard $ length res > 3 && (maximum ds == minimum ds)
+  return (i, fst $ head . tail $ res, fromMaybe (-1) $ elemIndex b (parsed <$> initialRocks))
 
 differences :: [Int] -> [Int]
 differences arr@(x:xs) = zipWith (flip (-)) arr xs
