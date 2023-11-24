@@ -1,5 +1,6 @@
 module Main where
 
+import Day7 (main)
 import Day8 (main)
 import Day8Tardis (main)
 import Day9 (main)
@@ -15,6 +16,7 @@ import Day23 (main)
 
 main :: IO ()
 main = do
+  Day7.main
   Day8.main
   Day8Tardis.main
   Day9.main
