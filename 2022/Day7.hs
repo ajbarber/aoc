@@ -7,12 +7,10 @@ import Data.Map (Map, insert, adjust, empty, filter, foldl)
 import Data.List (tails, inits)
 import Debug.Trace
 
-
-data Node = Node String String deriving Show
-
--- Node back ref
+-- Commands modelling the interpreter state
 data Command = Ls | Cd String | File Int | Dir String | Unknown deriving Show
 
+-- Our filesystem state
 data FilesState  = FilesState { file :: Map [String] Int,
                                 path :: [String] } deriving Show
 
@@ -24,8 +22,6 @@ main = do
   print sum
   where
     init = FilesState { path = [], file = empty }
-
-type RState a m = State m a
 
 parse :: String -> State FilesState ()
 parse str = do
