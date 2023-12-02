@@ -13,9 +13,16 @@ main = do
   let q = (12,13,14)
   let part1 = sum . map fst $ filter (possible q . snd) $ zip [1..] runs
   print part1
+  let part2 = foldr (flip ((. product_) . (+)). max' q) 0 runs
+  print part2
 
 possible :: (Int, Int, Int) -> GameRun [(Int, Int, Int)] -> Bool
 possible given (GameRun runs) = all (valid given) runs
+
+max' :: (Int, Int, Int) -> GameRun [(Int, Int, Int)] -> (Int, Int, Int)
+max' given (GameRun runs) = (maximum $ fst' <$> runs,
+                            maximum $ snd' <$> runs,
+                            maximum $ thd' <$> runs)
 
 valid :: (Int, Int, Int) -> (Int, Int, Int) -> Bool
 valid (l1, l2, l3) (g1, g2, g3) = g1 <= l1 && g2 <= l2 && g3 <= l3
@@ -37,3 +44,15 @@ parseGameStr :: (Int, Int, Int) -> (Int, String) -> (Int, Int, Int)
 parseGameStr (r,g,b) (d, "red") = (d, g, b)
 parseGameStr (r,g,b) (d, "green") = (r, d, b)
 parseGameStr (r,g,b) (d, "blue") = (r, g, d)
+
+product_ :: (Int, Int, Int) -> Int
+product_ (a, b, c) = a*b*c
+
+thd' :: (a, b, c) -> c
+thd' (a,b,c) = c
+
+snd' :: (a, b, c) -> b
+snd' (a,b,c) = b
+
+fst' :: (a, b, c) -> a
+fst' (a,b,c) = a
