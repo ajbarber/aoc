@@ -54,7 +54,7 @@ gearRatios g symbols = forM_ symbols (\((i,j),c) -> do
 
 expand :: CharGrid -> (Int, Int) -> ((Int, Int),String)
 expand g (i,j) = let s = execState (findStart g (i,j)) j in
-  ((i,s),snd <$> takeWhile (\(_,v) -> isDigit v) (filter (\((m,n),v) -> i == m && n >= s) g))
+  ((i,s), snd <$> takeWhile (isDigit . snd) (filter (\((m,n),_) -> i == m && n >= s) g))
 
 findStart :: CharGrid -> (Int, Int) -> State Int Bool
 findStart g (i,j) = iterateWhile id (do
@@ -64,7 +64,7 @@ findStart g (i,j) = iterateWhile id (do
      _ -> pure False)
 
 neighbours :: (Int, Int) -> [(Int, Int)]
-neighbours (i,j) = [(i-1,j), (i+1,j), (i,j-1), (i,j+1), (i-1, j-1), (i+1,j+1), (i-1, j+1), (i+1, j-1)]
+neighbours (i,j) = [(i+di, j+dj) | di <- [-1..1], dj<-[-1..1], (di,dj) /= (0,0)]
 
 (&.&) :: (a -> Bool) -> (a -> Bool) -> (a -> Bool)
 (&.&) = liftM2 (&&)
