@@ -1,4 +1,5 @@
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE BlockArguments #-}
 module Day3 where
 
 import Prelude
@@ -48,20 +49,20 @@ gearRatios :: CharGrid -> CharGrid -> Writer [(Int,Int)] ()
 gearRatios g symbols = forM_ symbols (\((i,j),c) -> do
   let nbrs = neighbours (i,j)
   let expansions = expand g . fst <$> filter (isDigit . snd) (mapMaybe (\i -> (i,) <$> lookup i g) nbrs)
-  let nbrElems = nubBy ((==) `on` snd) $ expansions
+  let nbrElems = nubBy ((==) `on` snd) expansions
   when (length (fst <$> nbrElems) == 2) $ do
     tell [(read $ (snd <$> nbrElems) !! 0, read $ (snd <$> nbrElems) !! 1)])
 
 expand :: CharGrid -> (Int, Int) -> ((Int, Int),String)
-expand g (i,j) = let s = execState (findStart g (i,j)) j in
+expand g (i,j) = let s = execState (findStart' g (i,j)) j in
   ((i,s), snd <$> takeWhile (isDigit . snd) (filter (\((m,n),_) -> i == m && n >= s) g))
 
-findStart :: CharGrid -> (Int, Int) -> State Int Bool
-findStart g (i,j) = iterateWhile id (do
-   k <- get
-   case lookup (i,k-1) g of
-     Just r -> if isDigit r then True <$ put (k-1) else pure False
-     _ -> pure False)
+findStart' :: CharGrid -> (Int, Int) -> State Int ()
+findStart' g (i,j) = whileM_ do
+     k <- get
+     pure ((isDigit <$> lookup (i,k-1) g) == Just True)
+   do
+     modify (\k -> k -1)
 
 neighbours :: (Int, Int) -> [(Int, Int)]
 neighbours (i,j) = [(i+di, j+dj) | di <- [-1..1], dj<-[-1..1], (di,dj) /= (0,0)]
