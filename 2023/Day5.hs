@@ -12,11 +12,11 @@ import Data.List.Extra
 import Debug.Trace
 import Data.Ix
 
-data GenericMap = LowHighDelta Int Int Int deriving Show
+data RangeMap = LowHighDelta Int Int Int deriving Show
 
 data SeedState = SeedState { seeds :: [Int],
                              currentCat :: String,
-                             categoryMap :: M.Map String [GenericMap] } deriving Show
+                             categoryMap :: M.Map String [RangeMap] } deriving Show
 main :: IO ()
 main = do
   str <- readFile "Day5.txt"
@@ -26,7 +26,7 @@ main = do
   let part2 = evalState locationRanges state'
   print ("Part 1: " <> show (minimum part2))
 
-expandedMap :: [GenericMap] -> String -> String -> String -> [GenericMap]
+expandedMap :: [RangeMap] -> String -> String -> String -> [RangeMap]
 expandedMap b' x y z = let z' = read z
                            y' = read y
                            x' = read x in
