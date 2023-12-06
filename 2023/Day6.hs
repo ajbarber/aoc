@@ -8,7 +8,7 @@ main :: IO ()
 main = do
   str <- readFile "Day6.txt"
   let games = parseGame str
-  let distances = product $ zipWith (\ n arr -> length $ filter (> n) arr) (snd <$> games) (map (distance . fst) games)
+  let distances = product $ zipWith (\n -> length . filter (> n)) (snd <$> games) (map (distance . fst) games)
   print distances
   let (gameTime, record) = parseGamePart2 str
   let (fst,lst) = solution gameTime record
