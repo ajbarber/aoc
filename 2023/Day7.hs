@@ -10,15 +10,16 @@ main = do
   str <- readFile "Day7.txt"
   let games = parse str
   let played = zip games (play . fst <$> games)
-  let sorted0 = sortOn (\(gd, hand) -> (hand, fst gd)) played
-  let sorted = sum $ zipWith (*) [1..] (snd . fst <$> sortOn (\(gd, hand) -> (hand, fst gd)) played )
-  mapM_ putStrLn (take 100 $ drop 400 $ show <$> sorted0)
-  let part1 = sorted
+  let part1 = sum $ zipWith (*) [1..] (snd . fst <$> sortOn (\(gd, hand) -> (hand, fst gd)) played )
+  mapM_ putStrLn (take 100 $ drop 400 $ show <$> played)
+  let played2 = zip games (play . bestSubstitution .fst <$> games)
+  let part2 = sum $ zipWith (*) [1..] (snd . fst <$> sortOn (\(gd, hand) -> (hand, fst gd)) played2 )
   print part1
+  print part2
 
 -- default Ord instance of an ADT is the order listed below
 -- default Ord on Tuple and Lists is lexographic, so we get sorting for free with `sortOn`
-data Card = Card2 | Card3 | Card4 | Card5 | Card6 | Card7 | Card8 | Card9 | CardT | CardJ | CardQ | CardK | CardA deriving (Eq, Ord, Show)
+data Card = CardJ | Card2 | Card3 | Card4 | Card5 | Card6 | Card7 | Card8 | Card9 | CardT | CardQ | CardK | CardA deriving (Eq, Ord, Show)
 
 toCard :: Char -> Card
 toCard '2' = Card2
@@ -71,8 +72,10 @@ twoPair :: [Card] -> Maybe Int
 twoPair str = do
   x <- msum $ map same (substrings 2 str)
   case filter (/=x) str of
-    (a:b:c:_) -> if a==b && b /=c || b == c && a /= c || a==c && a/=b then Just 3 else Nothing
+    (a:b:c:_) -> if oneDiffering a b c then Just 3 else Nothing
     _ -> Nothing
+  where
+    oneDiffering a b c = a==b && b /=c || b == c && a /= c || a==c && a/=b
 
 onePair :: [Card] -> Maybe Int
 onePair str = do
@@ -85,4 +88,14 @@ highCard :: [Card] -> Maybe Int
 highCard str = 1 <$ Just (length (nub str) == length str)
 
 play :: [Card] -> Maybe Int
-play row =  msum $ ($ row) <$> [fiveOfaKind, fourOfaKind, fullHouse, threeOfaKind,twoPair,onePair, highCard]
+play row =  msum $ ($ row) <$> [fiveOfaKind, fourOfaKind, fullHouse, threeOfaKind, twoPair, onePair, highCard]
+
+cards = [ Card2, Card3, Card4, Card5, Card6, Card7, Card8, Card9, CardT, CardQ, CardK, CardA ]
+
+substitutions :: [Card] -> [[Card]]
+substitutions (CardJ:xs) = concatMap (\c -> (c:) <$> substitutions xs) cards
+substitutions (x:xs) = map (x:) (substitutions xs)
+substitutions [] = [[]]
+
+bestSubstitution :: [Card] -> [Card]
+bestSubstitution card = last $ sortOn (\x -> (play x, x)) (substitutions card)
