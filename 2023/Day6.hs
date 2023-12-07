@@ -12,7 +12,7 @@ main = do
   print distances
   let (gameTime, record) = parseGamePart2 str
   let (fst,lst) = solution gameTime record
-  let ways = 2 + ceiling lst - floor fst
+  let ways = 2 + floor lst - ceiling fst
   print ways
 
 parseGame :: String -> [(Int, Int)]
