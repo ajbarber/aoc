@@ -49,6 +49,6 @@ executable aoc
                       monad-loops ^>=0.4.3,
                       tardis ^>=0.4.4,
                       linear ^>=1.22,
-                      split ^>= 0.2.3.5
+                      split ^>= 0.2.3.5,
     hs-source-dirs:   2022, 2023
     default-language: Haskell2010
