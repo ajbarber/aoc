@@ -12,9 +12,16 @@ main :: IO ()
 main = do
   str <- readFile "Day9.txt"
   let rows = parseLine <$> lines str
-  let accums = map (reverse . snd . runWriter . accumDiffs) rows
-  let part1 =  sum $ map (last . propagate) accums
+  let part1 = propagation (accums rows)
+  let part2 = propagation (accums (reverse <$> rows))
   print part1
+  print part2
+
+accums :: [[Int]] -> [[[Int]]]
+accums = map (reverse . snd . runWriter . accumDiffs)
+
+propagation :: [[[Int]]]-> Int
+propagation = sum . map (last . propagate)
 
 parseLine :: String -> [Int]
 parseLine str = read <$> words str
