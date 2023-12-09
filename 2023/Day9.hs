@@ -34,5 +34,9 @@ accumDiffs xs = firstM (\xs' -> do
 diff :: (Num c, Show c) => [c] -> [c]
 diff xs = zipWith (-) (tail xs) xs
 
+-- This is an eyeful but
+-- duplicates the last element of the accumulator b (the diffs) [3,3,3,3] => [3,3,3,3,3]
+-- duplicates the last element of the starting value [0,..]
+-- does not start applying diffs, until the second element, so (head a:______)
 propagate :: [[Int]] -> [Int]
 propagate (x:xs) = foldl' (\b a -> head a:zipWith (+) (b <> [last b]) a) (x<>[0]) xs
