@@ -16,16 +16,19 @@ main = do
   str <- readFile "Day11.txt"
   print str
   let (graph, number) = runState (numbers (parseLines str)) 0
-  let g1 = runWithDups 0 graph
-  let g10 = runWithDups 10 graph
+  let g0 = runWithDups 0 graph
+  let g1 = runWithDups 1 graph
   let ps =  pairs [1..number]
   print "Here"
-  print number
-  let part1 = mapMaybe (uncurry (manhattan g1)) ps
-  let check =mapMaybe (uncurry (manhattan g10)) ps
+  let part1 = mapMaybe (uncurry (manhattan g0)) ps
+  let check =mapMaybe (uncurry (manhattan g1)) ps
+  print part1
+  print check
   let delta100 = zipWith (-) check part1
-  let part2 = sum $ zipWith (+) ((100000*) <$> delta100) part1
+  print delta100
+  let part2 = sum $ zipWith (+) ((100*) <$> delta100) part1
   print part2
+  print (sum part1)
 
 type Graph a = V.Vector (V.Vector a)
 
