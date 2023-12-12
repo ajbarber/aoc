@@ -10,20 +10,27 @@ import Data.Char
 import Data.Vector (findIndex)
 import Data.List
 import Data.Maybe
+import Control.Monad.Loops
 
 main :: IO ()
 main = do
   str <- readFile "Day11.txt"
   print str
-  let (graph, number) = runState (numbers (parseLines str)) 0
+  let (graph, _) = runState (numbers (parseLines str)) []
+  let g1 = runWithDups 1 graph
   let g100 = runWithDups 99 graph
-  let ps =  pairs [1..number]
-  print "Here"
-  let g100' = mapMaybe (uncurry (manhattan g100)) ps
-
-  let delta10 n = (\x-> x `mod` 100 + (x `div` 100) * n) <$> g100'
-  let part2 = sum $ delta10 1000000
-  print (part2)
+  let g200 = runWithDups 199 graph
+  let g1number = execState (numbers' g1) []
+  let g100number = execState (numbers' g100) []
+  let g200number = execState (numbers' g200) []
+  let g1' = map (uncurry manhattan) (pairs g1number)
+  let g100' = map (uncurry manhattan) (pairs  g100number)
+  let g200' = map (uncurry manhattan) (pairs  g200number)
+  let delta = zipWith (-) g200' g100'
+  let part1 = sum g1'
+  let part2 = sum $ zipWith (+) g100' ((9999*) <$> delta)
+  print part1
+  print part2
 
 type Graph a = V.Vector (V.Vector a)
 
@@ -37,8 +44,12 @@ parseLines str = V.fromList $ map V.fromList (lines str)
 
 forWIndex_ x = for_ (zip [0..] x)
 
-numbers :: V.Vector (V.Vector Char) -> State Int (V.Vector (V.Vector String))
+numbers :: V.Vector (V.Vector Char) -> State [Int] (V.Vector (V.Vector String))
 numbers = mapM number
+
+-- 2nd pass over the expanded vector to grab an assoc of coordinates and points
+numbers' :: V.Vector (V.Vector String) -> State [(Int, (Int, Int))] ()
+numbers' xs = mapM_ (uncurry number') $ V.zip (V.fromList [0..V.length xs -1]) xs
 
 blanks :: Graph String -> ([Int],[Int])
 blanks g = let
@@ -51,12 +62,20 @@ blanks g = let
 dims :: Graph a -> (Int, Int)
 dims g = (V.length g - 1, V.length (g V.! 0) - 1)
 
-number :: V.Vector Char -> State Int (V.Vector String)
+number' :: Int -> V.Vector String -> State [(Int,(Int,Int))] ()
+number' i vec = do
+  mapM_ (\(j,e) -> do
+    xs <- get
+    let ctr = if null xs then 0 else fst $ head xs
+    when (e /= ".") $ put $ (ctr+1,(i,j)):xs) (V.zip (V.fromList [0..V.length vec - 1]) vec)
+
+number :: V.Vector Char -> State [Int] (V.Vector String)
 number vec = do
   mapM (\e -> do
-    ctr <- get
+    xs <- get
+    let ctr = if null xs then 0 else head xs
     if e == '#' then do
-      modify (+1)
+      put $ (ctr+1):xs
       pure (show (ctr + 1))
     else pure ".") vec
 
@@ -83,15 +102,24 @@ insertRow n g i = insert_ n g i (V.replicate (rlen + 1) ".")
   where
     (rlen, _) = dims g
 
--- Gets coordinates (row, col) of vector value c
+pairs :: (Ord a, Ord b) => [(a,b)] -> [((a,b), (a,b))]
+pairs l = sortOn snd $ [(x, y) | (x:ys) <- tails l, y <- l, fst x < fst y]
+
+manhattan :: (a4, (Int, Int)) -> (a3, (Int, Int)) -> Int
+manhattan (_,(si,sj)) (_,(di,dj)) = abs (di - si) + abs (dj - sj)
+
+-----------------------------------------------------------------------------
+-- Gets coordinates (row, col) of vector value c -- unused now that I store
+-- the coords with the value in the execState to save lookup in the Vectors
 find_ :: (Eq a, Enum t, Num t) => Graph a -> a -> Maybe (t, Int)
 find_ g c = msum $ zipWith (\a b -> (a,) <$> b) [0..] (V.toList $ V.findIndex (== c) <$> g)
 
-pairs :: [Int] -> [(String, String)]
-pairs l = [(show x, show y) | (x:ys) <- tails l, y <- l, x < y]
+findAlt :: Eq a => Graph a -> a -> Maybe (Int, Int)
+findAlt g c = let (f,s) = runState (find__ g c) 0 in Just (f,s)
 
-manhattan :: Eq a => Graph a -> a -> a -> Maybe Int
-manhattan g src dst = do
-  (si, sj) <- find_ g src
-  (di, dj) <- find_ g dst
-  pure $ abs (di - si) + abs (dj - sj)
+find__ :: Eq a => Graph a -> a -> State Int Int
+find__ g c = untilJust do
+  i <- get
+  modify (+1)
+  pure $ V.findIndex (==c) (g V.! i)
+------------------------------------------------------------------------------
