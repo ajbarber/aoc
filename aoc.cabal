@@ -38,7 +38,8 @@ executable aoc
         Day9,
         Day10,
         Day11,
-        Day12
+        Day12,
+        Day13
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -54,5 +55,7 @@ executable aoc
                       tardis ^>=0.4.4,
                       linear ^>=1.22,
                       split ^>= 0.2.3.5,
+                      MemoTrie ^>= 0.6.10,
+                      monad-memo ^>= 0.5.4
     hs-source-dirs:   2022, 2023
     default-language: Haskell2010
