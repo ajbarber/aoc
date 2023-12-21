@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 module Day10 where
 
 import Prelude
@@ -10,16 +11,31 @@ import Data.Foldable
 import Data.List
 import Debug.Trace
 import Data.Function
+import Data.Maybe
 
---- read in to a Node = (Int,Int) String Map
---- bfs on nodes appending Node, Distance pairs
+--- Read in to a Node = (Int,Int) String Map
+--- BFS on nodes appending Node, Distance pairs
 --- when all nodes visited, inspect output array, coalesce Node pairs with min(d1,s2)
--- find max distance Node
+--- find max distance Node
 
 -- (row, col)
 type Node = (Int, Int)
 
-data Direction = NE | NW | SE | SW | V | H | Start | None deriving (Show, Eq)
+data Window = Window { lastDir:: Direction, toggle:: Bool } deriving (Show)
+
+data Direction = NE | NW | SE | SW | V | H | Start | X | Internal | None deriving (Eq)
+
+instance Show Direction where
+  show NE = "L"
+  show NW = "K"
+  show SW = "7"
+  show SE = "F"
+  show V = "|"
+  show H = "-"
+  show Start = "S"
+  show None = "."
+  show Internal = "&"
+  show X = "*"
 
 type Graph = M.Map Node Direction
 
@@ -28,11 +44,20 @@ main = do
   str <- readFile "Day10.txt"
   let graph = execState (parse str) M.empty
   let start = head . M.keys $ M.filter (==Start) graph
-  let pairs = execWriter (walk start graph)
-  let res = map (maximumBy (compare `on` snd)) (groupBy ((==) `on` snd) pairs)
+  let loop = execWriter (walk start graph)
+  let res = map (maximumBy (compare `on` snd)) (groupBy ((==) `on` snd) loop)
   let part1 = fst $ last res
-  print res
+  let init r = Window { lastDir = None, toggle = False }
+  let (rows, _) = dimensions graph
+  -- Note: Need to replace S to determine interior/exterior status of cells in this row
+  let graph' = replaceS start graph
+  let part2 = concatMap (\r -> snd $ execState (interiorNodes r graph' (snd <$> loop)) (init r,[])) [0..rows]
   print part1
+  print part2
+  --- Some pretty printing
+  let graphWithLoop = execState (addPath X (snd <$> loop) >> addPath Internal part2) graph
+  let str = execState (printPath graphWithLoop) ""
+  writeFile "Day10Out.txt" str
 
 toDirection :: Char -> Direction
 toDirection 'J' = NW
@@ -91,3 +116,57 @@ walk start graph = bfs graph [(0,start)] []
       let ns = neighbours graph (snd s) \\ visited
       tell [s]
       bfs graph (stack ++ ((fst s + 1,) <$> ns)) (visited++ns)
+
+dimensions :: Graph -> (Int, Int)
+dimensions graph = fst $ M.findMax graph
+
+-- loop is represented as a [(Int, Int)].
+-- Graph is a map of (Int,Int) to Direction
+-- Part 2 algorithm outline
+-- walk the graph L to R top to bottom
+-- check if we hit a path at each node on walk
+-- check if this is a vert, flip a bool indicating
+-- we are on an interior area.
+-- Count visited nodes when bool true and not on loop.
+--  ...L7||...-|...
+--  False True False
+--- 000000123444444
+interiorNodes :: Int -> Graph -> [(Int, Int)] -> State (Window, [(Int,Int)]) ()
+interiorNodes row graph path =
+    forM_ [(row,j)| j<- [0..jMax] ] (\c -> do
+      (window, arr) <- get
+      let isVertical = M.lookup c graph `elem` verticals
+          verticals = [Just V, Just SE, Just NE, Just NW, Just SW]
+          onPath = c `elem` path
+          currentDir = fromMaybe None $ M.lookup c graph
+          toggle' = if onPath && isVertical && not (edgeCase window.lastDir currentDir) then not window.toggle else window.toggle
+          window' = if onPath then window { lastDir = if isVertical then currentDir else window.lastDir} else window
+          arr' = if window.toggle && not onPath && not (reachRhs c graph path) then c:arr else arr
+      put (window' { toggle = toggle'}, arr'))
+      where
+        (iMax, jMax) = dimensions graph
+
+edgeCase :: Direction -> Direction -> Bool
+edgeCase SE NW =True
+edgeCase NE SW = True
+edgeCase _ _ = False
+
+reachRhs :: (Int, Int) -> Graph -> [(Int,Int)] -> Bool
+reachRhs (i,j) g path = let (_, jMax) = dimensions g in
+  all (`notElem` path) [(i,j+k) | k <- [1..jMax -j]]
+
+replaceS :: Node -> Graph -> Graph
+replaceS = M.adjust (const NW)
+
+addPath :: Direction -> [(Int,Int)] -> State Graph ()
+addPath dir path  = forM_ path \(i,j) -> do
+  s <- get
+  put $ M.insert (i,j) dir s
+
+printPath :: Graph -> State String ()
+printPath g =
+  forM_ [0..iMax] \i -> do
+     let line = foldr (\a b-> b <> show (fromMaybe None (M.lookup (i,a) g))) "" [0..jMax]
+     modify (<> line <> "\n")
+  where
+     (iMax, jMax) = dimensions g
