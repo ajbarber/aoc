@@ -47,15 +47,16 @@ main = do
   let loop = execWriter (walk start graph)
   let res = map (maximumBy (compare `on` snd)) (groupBy ((==) `on` snd) loop)
   let part1 = fst $ last res
-  let init r = Window { lastDir = None, toggle = False }
+  let init = Window { lastDir = None, toggle = False }
   let (rows, _) = dimensions graph
   -- Note: Need to replace S to determine interior/exterior status of cells in this row
   let graph' = replaceS start graph
-  let part2 = concatMap (\r -> snd $ execState (interiorNodes r graph' (snd <$> loop)) (init r,[])) [0..rows]
+  let loopNodes = snd <$> loop
+  let part2 = concatMap (snd . flip execState (init,[]) . interiorNodes graph' loopNodes) [0..rows]
   print part1
   print part2
   --- Some pretty printing
-  let graphWithLoop = execState (addPath X (snd <$> loop) >> addPath Internal part2) graph
+  let graphWithLoop = execState (addPath X loopNodes >> addPath Internal part2) graph
   let str = execState (printPath graphWithLoop) ""
   writeFile "Day10Out.txt" str
 
@@ -131,21 +132,27 @@ dimensions graph = fst $ M.findMax graph
 --  ...L7||...-|...
 --  False True False
 --- 000000123444444
-interiorNodes :: Int -> Graph -> [(Int, Int)] -> State (Window, [(Int,Int)]) ()
-interiorNodes row graph path =
+interiorNodes :: Graph -> [(Int, Int)] -> Int -> State (Window, [(Int,Int)]) ()
+interiorNodes graph path row =
     forM_ [(row,j)| j<- [0..jMax] ] (\c -> do
       (window, arr) <- get
       let isVertical = M.lookup c graph `elem` verticals
           verticals = [Just V, Just SE, Just NE, Just NW, Just SW]
           onPath = c `elem` path
           currentDir = fromMaybe None $ M.lookup c graph
-          toggle' = if onPath && isVertical && not (edgeCase window.lastDir currentDir) then not window.toggle else window.toggle
-          window' = if onPath then window { lastDir = if isVertical then currentDir else window.lastDir} else window
-          arr' = if window.toggle && not onPath && not (reachRhs c graph path) then c:arr else arr
+          toggle' = if onPath && isVertical && not (edgeCase window.lastDir currentDir)
+                    then not window.toggle else window.toggle
+          window' = if onPath
+                    then window { lastDir = if isVertical then currentDir else window.lastDir}
+                    else window
+          arr' = if window.toggle && not onPath && not (reachRhs c graph path)
+                 then c:arr
+                 else arr
       put (window' { toggle = toggle'}, arr'))
       where
         (iMax, jMax) = dimensions graph
 
+-- Treat these occurring in succession as one crossing.
 edgeCase :: Direction -> Direction -> Bool
 edgeCase SE NW =True
 edgeCase NE SW = True
