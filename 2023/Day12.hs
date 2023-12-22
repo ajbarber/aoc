@@ -3,7 +3,6 @@ import Data.List.Extra
 import Data.Maybe
 import qualified Data.Map as M
 import Control.Monad.State.Strict
-import Control.Monad.Memo
 import Control.Applicative ((<|>))
 
 main :: IO ()
@@ -28,13 +27,13 @@ unfold n a r = (intercalate "?" (replicate n a), concat $ replicate n r)
 
 --"??????#?#?#?..???#?.",[6,2]
 -- Initial brute force tree based approach - fails to generalise to Part 2
-process' :: String -> (String, Rules) -> MonadMemo _ Int Int
-process' accum ([],rules) = pure $ length [accum  | compliant accum rules]
-process' accum (current@('?':cs), rules) = do
-  child1 <- process' (accum++".") (cs, rules)
-  child2 <- process' (accum++"#") (cs, rules)
-  return child1 + child2
-process' accum (current@(c:cs), rules) = process' (accum<>[c]) (cs, rules)
+-- process' :: String -> (String, Rules) -> MonadMemo _ Int Int
+-- process' accum ([],rules) = pure $ length [accum  | compliant accum rules]
+-- process' accum (current@('?':cs), rules) = do
+--   child1 <- process' (accum++".") (cs, rules)
+--   child2 <- process' (accum++"#") (cs, rules)
+--   return child1 + child2
+-- process' accum (current@(c:cs), rules) = process' (accum<>[c]) (cs, rules)
 
 compliant :: Accum -> Rules -> Bool
 compliant accum rules = let
