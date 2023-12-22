@@ -16,10 +16,35 @@ const handler = () => {
   res.pop();
   const vertResults = res.map(r => singleRun(r, true));
   const horiResults = res.map(r=> singleRun(transpose(r), false));
-  const horis = vertResults.flatMap(x=>x).reduce((acc,x) => x + acc,0);
-  const verts = horiResults.flatMap(x=>x).reduce((acc,x) => x + acc,0);
+
+  const verts = summarise(vertResults);
+  const horis = summarise(horiResults);
+
+  const verts_ = flatten(vertResults);
+  const horis_ = flatten(horiResults);
+
+  // returns [ newVert, newHori]
+  const pt2 = [...res].map((r,i) => simulateOne(r, verts_[i], horis_[i])).reduce((acc, [v,h]) => Number(v) + Number(h) + acc, 0);
+
   console.log(`Part 1: ${horis + verts}`);
+  console.log(`Part 2: ${pt2}`)
 }
+
+function uniq(value, index, self) {
+  return self.indexOf(value) === index;
+}
+
+const simulateOne = (res, origVert, origHori) => {
+  const smu = smudges(res);
+  const newVert = smu.flatMap(x => singleRun(x, true, origVert));
+  const newHori = smu.flatMap(x => singleRun(transpose(x), false, origHori));
+  const result = flatten([newVert, newHori]);
+  return result;
+}
+
+const flatten = x => x.map(x => x.length == 0 ? 0 : x[0]);
+
+const summarise = (z) => z.flatMap(x=>x).reduce((acc,x) => x + acc,0);
 
 const substrs = (str) => {
   const n = str.length;
@@ -67,13 +92,18 @@ const reflections = (cache, strs) => {
 }
 
 function transpose(matrix) {
-  let result = []
-  for (var j = 0; j < matrix[0].length; j++) {
-    for (var i = 0; i < matrix.length; i++) {
+  let result = [];
+  const [iMax,jMax] = dimensions(matrix)
+  for (var j = 0; j < jMax; j++) {
+    for (var i = 0; i < iMax; i++) {
       result[j] = (result[j] || "") + matrix[i].substr(j,1)
     }
   }
   return result;
+}
+
+function dimensions(matrix) {
+  return [matrix.length, matrix[0].length];
 }
 
 function midPoint(i,j) {
@@ -84,7 +114,7 @@ function midPoint(i,j) {
   }
 }
 
-const singleRun = (matrix, vert) => {
+const singleRun = (matrix, vert, exclude = null) => {
   const test = reflections({}, matrix);
   var res = [];
   for (var i of Object.keys(test)) {
@@ -99,6 +129,36 @@ const singleRun = (matrix, vert) => {
       }
     }
   }
-  //Take highest in case of duplicate
-  return res.length>0 ? [Math.max(...res)]:res;
+  let newRes = res;
+  if (exclude !== null) {
+      const arrMaybe = res.filter(uniq).filter(x => x !== exclude);
+      newRes = arrMaybe.length > 0 ? [arrMaybe[0]] : [];
+  }
+  return newRes;
+}
+
+const flip = (chr)  => {
+  if (chr == "#") return ".";
+  else if (chr == ".") return "#";
+}
+
+const copy = (matrix) => matrix.slice().map(arr => arr.slice());
+
+const smudges = (matrix) => {
+  const [iMax, jMax] = dimensions(matrix);
+  var res = []
+  for (let i = 0; i < iMax; i++) {
+    for (let j = 0; j < jMax; j++) {
+      let newCopy = copy(matrix);
+      const newVal = flip(newCopy[i].charAt(j));
+      newCopy[i] = setCharAt(newCopy[i],j, newVal);
+      res.push(newCopy);
+    }
+  }
+  return res;
+}
+
+function setCharAt(str,index,chr) {
+  if(index > str.length-1) return str;
+  return str.substring(0,index) + chr + str.substring(index+1);
 }
