@@ -1,43 +1,60 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use lambda-case" #-}
 
 module Day16 where
 
 import Prelude
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.Functor.Identity
 import Control.Monad
 import Control.Monad.Extra
-import Data.Function
 import Data.Either
-import Control.Monad.State
+import qualified Data.Set as S
+import Control.Monad.State.Strict
 import Debug.Trace
+import qualified Data.Vector as V
 import Data.List
+import Data.Maybe
 
 type Coords = (Int, Int)
 
 data Direction = U | D | R | L deriving (Show, Eq, Ord)
 
-type Maze = M.Map (Int, Int) Char
+type Maze = V.Vector (V.Vector Char)
 
 -- Represents current coordinates and direction
 data Tracer = Tracer Coords Direction deriving (Show, Eq, Ord)
 
-data MazeState = MazeState { visited :: [Coords], maze :: Maze, tracers :: [Tracer] } deriving (Show)
+data MazeState = MazeState { visited :: S.Set (Coords,Direction), maze :: Maze, tracers :: [Tracer] } deriving (Show)
 
 main :: IO ()
 main = do
   str <- readFile "Day16.txt"
-  let m = foldr (uncurry toMap) M.empty $ zip [0..] (lines str)
+  let m = V.fromList $ map toVec (lines str)
   --print m
-  let part1 =evalState loopStep MazeState { visited= [(0,0)], maze=m, tracers= [Tracer (0, 0) D1]}
-  print part1
+  let startPos = perimeter (dimensions m)
 
-toMap :: (Ord a, Enum a', Ord a', Num a') => a -> [b] -> M.Map (a,a') b -> M.Map (a,a') b
-toMap i s m = foldr (\(j,a) b -> M.insert (i,j) a b) m (zip [0..] s)
+  let (a, part1) = runState loopStep MazeState { visited=S.singleton ((0,0), D), maze=m, tracers= [Tracer (0, 0) D]}
+  let part2 = (\t@(Tracer c d) -> runState loopStep MazeState { visited= S.singleton (c,d), maze=m, tracers=[t]}) <$> startPos
 
--- step :: [Tracer] -> Maze -> Maze
--- step tracers m =
+  print ("Part 1 " <> show a)
+  print ("Part 2 " <> show (maximum $ fst <$> part2))
+
+toVec :: String -> V.Vector Char
+toVec = V.fromList
+
+dimensions :: V.Vector (V.Vector b) -> (Int, Int)
+dimensions v = (length v, length $ v V.! 0)
+
+-- rows/cols
+perimeter :: (Int, Int) -> [Tracer]
+perimeter (m,n) = [ Tracer (0,j) D | j <- [0..n] ] <>
+                  [ Tracer (i,0) R | i <- [0..m] ] <>
+                  [ Tracer (m,j) U | j <- [0..n] ] <>
+                  [ Tracer (i,n) L | i <- [0..m] ]
 
 walk :: Direction -> Coords -> Coords
 walk dir (m,n) = case dir of
@@ -52,9 +69,9 @@ walk dir (m,n) = case dir of
 loopStep :: StateT MazeState Identity Int
 loopStep = loopM (\a -> do
   cur <- step
-  pure $ trace (show a) if length a > 10 && all (==head a) (take 20 a)
+  pure $ if length a > 10 && all (==head a) (take 20 a)
   then Right (head a)
-  else Left (cur:a)) [0]
+  else Left  (cur:a)) [0]
 
 -- step algorithm
 -- if current square . increment tracer coords in same direction , same with pointy end of splitter
@@ -64,15 +81,19 @@ loopStep = loopM (\a -> do
 step :: State MazeState Int
 step = do
   ms@MazeState {..} <- get
-  let tracers' = stepTracers maze tracers -- step tracers
-  let visited' = (\(Tracer coords _) -> coords) <$> tracers'
-  put $ ms { tracers = tracers', visited = visited <> visited' }
-  pure (length $ nub $ sort (visited' <> visited))
+  let tracers' = stepTracers visited maze tracers -- step tracers
+      visited' = (\(Tracer coords dir) -> (coords,dir)) <$> tracers'
+      newVis = foldr S.insert ms.visited visited'
+  put $ ms { tracers = tracers', visited = newVis }
+  pure $ S.size (S.map fst newVis)
 
-stepTracers :: Maze -> [Tracer] -> [Tracer]
-stepTracers maze tracers = flip concatMap tracers \(Tracer coords dir) ->
-  let coords' = walk dir coords in
-      case (M.lookup coords' maze, dir) of
+unTracer :: Tracer -> Coords
+unTracer (Tracer coords dir) = coords
+
+stepTracers :: S.Set (Coords,Direction) -> Maze -> [Tracer] -> [Tracer]
+stepTracers visited maze tracers = flip concatMap tracers \t@(Tracer coords dir) ->
+  let coords'@(m,n) = walk dir coords
+      newTracers = case ( maze V.!? m >>= \x-> x V.!? n, dir) of
         (Just '.', dir) -> [Tracer coords' dir]
         (Just '/', U) -> [Tracer coords' R]
         (Just '/', L) -> [Tracer coords' D]
@@ -91,3 +112,4 @@ stepTracers maze tracers = flip concatMap tracers \(Tracer coords dir) ->
         (Just '|', L) -> [Tracer coords' U, Tracer coords' D]
         (Just '|', R) -> [Tracer coords' U, Tracer coords' D]
         (Nothing, _) -> [] -- hit an edge stay put
+      in filter (\(Tracer c d) -> S.notMember (c,d) visited) newTracers
