@@ -11,6 +11,7 @@ import qualified Data.Map.Strict as M
 import Data.Functor.Identity
 import Control.Monad
 import Control.Monad.Extra
+import Control.Parallel.Strategies (parMap, rseq)
 import Data.Either
 import qualified Data.Set as S
 import Control.Monad.State.Strict
@@ -34,11 +35,11 @@ main :: IO ()
 main = do
   str <- readFile "Day16.txt"
   let m = V.fromList $ map toVec (lines str)
-  --print m
+
   let startPos = perimeter (dimensions m)
 
   let (a, part1) = runState loopStep MazeState { visited=S.singleton ((0,0), D), maze=m, tracers= [Tracer (0, 0) D]}
-  let part2 = (\t@(Tracer c d) -> runState loopStep MazeState { visited= S.singleton (c,d), maze=m, tracers=[t]}) <$> startPos
+  let part2 = parMap rseq (\t@(Tracer c d) -> runState loopStep MazeState { visited= S.singleton (c,d), maze=m, tracers=[t]}) startPos
 
   print ("Part 1 " <> show a)
   print ("Part 2 " <> show (maximum $ fst <$> part2))
@@ -69,7 +70,7 @@ walk dir (m,n) = case dir of
 loopStep :: StateT MazeState Identity Int
 loopStep = loopM (\a -> do
   cur <- step
-  pure $ if length a > 10 && all (==head a) (take 20 a)
+  pure $ if length a > 5 && all (==head a) (take 20 a)
   then Right (head a)
   else Left  (cur:a)) [0]
 
