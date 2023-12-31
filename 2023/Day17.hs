@@ -25,16 +25,21 @@ main = do
       paths = dijkstra gr state (m-1,n-1)
       (m,n) = dimensions gr
   print ("dimensions are " <> show (m,n))
-  print paths
+  print ("Part 2" <> show paths)
 
 type Graph = V.Vector (V.Vector Char)
+
 type Distances = V.Vector (V.Vector Int)
+
 type Queue a = [a]
+
 data Direction = R | L | U | D | None deriving (Eq, Show, Ord)
+
 -- extended coordinates which holds onto direction,
 -- number of consecutive moves in that direction,
 -- and a as the underlying polymorphic coordinates
 data XCoords a = XCoords Direction Int a deriving (Show, Functor, Eq, Ord)
+
 -- wrap around a coordinate type to remember a path
 data Path a = Node a (Path a) | Empty deriving (Eq, Show)
 
@@ -67,6 +72,9 @@ coords (XCoords _ _ a) = a
 travelled :: XCoords a -> Int
 travelled (XCoords _ x _) = x
 
+dirn :: XCoords a -> Direction
+dirn (XCoords d _ _) = d
+
 strip :: Path (XCoords w) -> w
 strip = coords . current
 
@@ -76,6 +84,9 @@ unDist Inf = 1000
 
 head' (x:xs) = Just x
 head' [] = Nothing
+
+(&|&) :: (w0 ->Bool) -> (w0 -> Bool) -> (w0 -> Bool)
+(&|&) = liftM2 (&&)
 
 mkCoords (XCoords dir n a) dir' = XCoords dir' (if dir == dir' || dir == None then n+1 else 1)
 
@@ -89,22 +100,19 @@ dijkstra graph state target = case head' state.queue of
 update' :: [(Maybe Int, XPath)] -> (Maybe Int, XPath) -> [(Maybe Int, XPath)]
 update' xs (i,coords) = sortOn fst ((i,coords): filter ((/=coords) . snd) xs)
 
+distLookup :: Ord a => M.Map a Dist -> a -> Dist
+distLookup distances = fromMaybe Inf . flip M.lookup distances
+
 step ::  Graph -> XPath -> XPath -> StepState -> StepState
 step graph u v state  =
-  let du = fromMaybe Inf (M.lookup u' distances)
-      dv = fromMaybe Inf (M.lookup v' distances)
+  let du = distLookup distances u'
+      dv = distLookup distances v'
       duv = digitToInt ((graph V.! fst (coords v')) V.! snd (coords v'))
       StepState {..} = state
       v' = current v
       u' = current u
       alt = Dist duv <> du
-  in if alt < dv then-- trace (show ("u=" <> show u' <>
-                      --             "v=" <> show v' <>
-                       --            "duv=" <> show duv <>
-                       --           "du=" <> show du
-                       --           ))
-                   -- trace (show queue)
-                              state { distances = M.insert v' alt distances,
+  in if alt < dv then state { distances = M.insert v' alt distances,
                               queue = update' queue (Just (unDist alt), v),
                               path = u} else state
 
@@ -116,16 +124,16 @@ neighbours graph node@(Node cur@(XCoords dir n (i,j)) _) =
         D -> [l,r,d]
         U -> [l,r,u]
         None -> [l,r,u,d]
-  in (`Node` node) <$> filter legal (filter (within . coords) nbrs)
+  in (`Node` node) <$> filter (minRuns cur &|& maxRuns &|& (within . coords)) nbrs
   where
      (iMax, jMax) = dimensions graph
      d = mkCoords cur D (i+1,j)
      l = mkCoords cur L (i,j-1)
      r = mkCoords cur R (i,j+1)
      u = mkCoords cur U (i-1,j)
-     legal n = travelled n <= 3
+     minRuns c n = (travelled c >= 4) || (dirn c == dirn n)
+     maxRuns n = travelled n <= 10
      within (x,y) = x>=0 && y>=0 && x <iMax && y<jMax
- -- in filterMap (\(x,y) -> x>=0 && y>=0 &&  x <iMax && y<jMax) nbrs
 
 dimensions :: Graph -> (Int, Int)
 dimensions g = (V.length g, V.length $ g V.! 0)
