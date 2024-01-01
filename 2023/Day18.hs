@@ -29,20 +29,15 @@ main = do
   let graph' = fst $ foldl move (M.singleton (0,0) "#", (0,0)) moves
       (m,n) = max' graph'
       (m0,n0) = min' graph'
-  ---print $ bfs graph' (m0-1,n0-1)
-  --print $ show (m0,m) <> show (n0, n)
-  --print $  length (nub $ sort $ bfs graph' (m0-1,n0-1))
+  print $ show (m0,m) <> show (n0, n)
   let graph2 = toVectors graph'
-  print graph2
-  print $ bfs graph2 (m0-1,n0-1) (m0-1, n0-1)
   let externals = length (nub $ sort $ bfs graph2 (m0-1,n0-1) (m0-1,n0-1)) - 2*((1+m-m0) + (1+n-n0)) - 4
   let orig = abs (1 + m - m0) * abs (1 + n - n0)
-  let rest = orig - externals
-  -- let part1 = execState fill GraphState { flipper = False, graph = graph' }
+  let part1 = orig - externals
 
   print orig
   print externals
-  print rest
+  print part1
 
 parseLine :: String -> Move
 parseLine str = let (y:z:zs) = words str in (y,z)
@@ -86,8 +81,7 @@ bfs :: Graph2 -> (Int, Int) -> (Int, Int) -> [(Int, Int)]
 bfs graph offset (i,j) = go graph offset [(i,j)] (S.singleton (i,j))
   where
     go g o [] visited = S.toList visited
-    go g o (q:qs) visited = bfsMemo g o qs visited q
-    bfsMemo g o qs visited = memo \q -> let n = neighbours g offset q in go g o ((qs <> n) \\ S.toList visited) (foldr S.insert visited [q])
+    go g o (q:qs) visited = let n = neighbours g offset q in trace (show $ length visited) go g o (S.toList (S.fromList n S.\\ visited)<> qs) (foldr S.insert visited [q])
 
 neighbours :: Graph2 -> (Int, Int) -> (Int, Int) -> [(Int, Int)]
 neighbours g (i0, j0) (i,j) =
