@@ -154,8 +154,8 @@ moveToCoord ("U", p) (m, n) = (m - read p, n)
 
 -- area of polygon bound by vertices  (x_1, 0), (x_2, 0), (x_1, y_1), (x_2, y_2)
 -- = 1/2 * (y_2 - y_1) * (x_1 + x_2)
-shoelaceFormula :: [(Int, Int)] -> Int
-shoelaceFormula xs = go xs
-   where
-     go [(x1,y1)] =
-     go (x1, y1):(x2, y2):_ = (y2 + y1) +
+-- shoelaceFormula :: [(Int, Int)] -> Int
+-- shoelaceFormula xs = go xs
+--    where
+--      go [(x1,y1)] =
+--      go (x1, y1):(x2, y2):_ = (y2 + y1) +
