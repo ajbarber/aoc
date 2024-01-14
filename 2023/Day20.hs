@@ -42,11 +42,19 @@ parseLine st line = let (lhs:rhs:_) = splitOn "->" line
                         (typ,lhs_) = toType (trim lhs)
                         rhs_ = trimStart <$> splitOn "," rhs
                         m = M.alter (\case
-                                      Just a' -> Just (a' { t = typ, on = False, outputs = rhs_ })
-                                      Nothing -> Just (Node { t = typ, on = False, inputs = [], outputs = rhs_})) lhs_ st
+                                      Just a' -> Just (a' { t = typ,
+                                                            on = False,
+                                                            outputs = rhs_ })
+                                      Nothing -> Just (Node { t = typ,
+                                                              on = False,
+                                                              inputs = [],
+                                                              outputs = rhs_})) lhs_ st
                         m' = foldl' (flip (M.alter (\case
                                       Just a' -> Just (a' { inputs = lhs_:a'.inputs })
-                                      Nothing -> Just (Node { t = Unknown, on = False, inputs = [lhs_], outputs= []})))) m rhs_ in m'
+                                      Nothing -> Just (Node { t = Unknown,
+                                                              on = False,
+                                                              inputs = [lhs_],
+                                                              outputs= []})))) m rhs_ in m'
 
 toType :: String -> (NodeType, String)
 toType "broadcaster" = (Broadcast, "broadcaster")
@@ -70,21 +78,17 @@ toType ('%':xs) = (Flip, xs)
 -- 2. if it remembers all high pulses for connected inputs -> send low pulse
 --    otherwise send high pulse
 
---(|||) = liftM2 (||)
-
 bfs :: State NodeState [Bool]
 bfs = go [(False, "", "broadcaster")] []
   where
     go :: [(Bool, String,String)] -> [Bool] -> State NodeState [Bool]
     go [] acc = pure acc
-    go ((sig, i,c):queue) acc = do --trace (i <> (if sig then " -high" else " -low") <>  "-> " <> c) do
+    go ((sig, i,c):queue) acc = do
       (ns, connections) <- get
       let cur = ns M.! c
           input = ns M.! i
           neighbours s = queue <> ((s,c,) <$> cur.outputs)
           connected = (\k -> M.lookup (k,c) connections) <$> cur.inputs
-      --traceM (show connections <>  "cur:" <> c <>  " : " <> show cur)
-      --traceM ("Connected " <> show connected)
       modify (second (M.insert (i, c) sig))
       if cur.t == Flip && sig then go queue (sig:acc) --ignore high signal
       else if cur.t == Flip && cur.on then do
