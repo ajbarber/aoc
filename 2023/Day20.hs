@@ -13,8 +13,9 @@ import qualified Data.Set as S
 import Data.List.Extra
 import Data.Foldable
 import Debug.Trace
-import Control.Monad.State.Strict
+import Control.Monad.State
 import Data.Maybe
+import Control.Monad.Trans.Writer.Strict
 
 data NodeType = Conjunction | Flip | Broadcast | Unknown deriving (Show,Eq)
 
@@ -25,12 +26,13 @@ type Connections = M.Map (String, String) Bool
 
 type NodeState = (M.Map String Node, Connections)
 
+data OnOff = On | Off deriving (Eq)
+
 main :: IO ()
 main = do
   str <- readFile "Day20.txt"
   let st = foldl' parseLine M.empty (lines str)
-  let (a,s) = runState runs (st, M.empty)
-  let highlows = concat a
+  let highlows = evalState (execWriterT runs) (st, M.empty)
   print (length (filter id highlows) * length (filter not highlows))
 
 runs = replicateM 1000 bfs
@@ -78,29 +80,33 @@ toType ('%':xs) = (Flip, xs)
 -- 2. if it remembers all high pulses for connected inputs -> send low pulse
 --    otherwise send high pulse
 
-bfs :: State NodeState [Bool]
-bfs = go [(False, "", "broadcaster")] []
+bfs :: WriterT [Bool] (State NodeState) ()
+bfs = go [(False, "", "broadcaster")]
   where
-    go :: [(Bool, String,String)] -> [Bool] -> State NodeState [Bool]
-    go [] acc = pure acc
-    go ((sig, i,c):queue) acc = do
-      (ns, connections) <- get
+    go :: [(Bool, String,String)] -> WriterT [Bool] (State NodeState) ()
+    go [] = return ()
+    go ((sig, i,c):queue) = do
+      (ns, connections) <- lift get
       let cur = ns M.! c
           input = ns M.! i
           neighbours s = queue <> ((s,c,) <$> cur.outputs)
           connected = (\k -> M.lookup (k,c) connections) <$> cur.inputs
-      modify (second (M.insert (i, c) sig))
-      if cur.t == Flip && sig then go queue (sig:acc) --ignore high signal
+      lift $ modify (second (M.insert (i, c) sig))
+      tell [sig]
+      if cur.t == Flip && sig then go queue  --ignore high signal
       else if cur.t == Flip && cur.on then do
-         modify (first (M.update (Just . \r -> r {on = False}) c)) -- turn off
-         go (neighbours False) (sig:acc)
+         switch c Off
+         go (neighbours False)
       else if cur.t == Flip && not cur.on then do
-         modify (first (M.update (Just . \r -> r {on = True}) c)) -- turn on
-         go (neighbours True) (sig:acc)
+         switch c On
+         go (neighbours True)
       else if cur.t == Conjunction then do
-         (_,connections') <- get
+         (_,connections') <- lift get
          let connected = (\k -> M.lookup (k,c) connections') <$> cur.inputs
              allHigh = all (== Just True) connected in
-             go (neighbours (not allHigh)) (sig:acc)
+             go (neighbours (not allHigh))
       else do
-         go (neighbours sig) (sig:acc)
+         go (neighbours sig)
+
+switch :: String -> OnOff -> WriterT [Bool] (State NodeState) ()
+switch c on = lift $ modify (first (M.update (Just . \r -> r {on = on == On}) c))
