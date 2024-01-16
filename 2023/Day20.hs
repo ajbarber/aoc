@@ -32,10 +32,10 @@ main :: IO ()
 main = do
   str <- readFile "Day20.txt"
   let st = foldl' parseLine M.empty (lines str)
-  let highlows = evalState (execWriterT runs) (st, M.empty)
+  let highlows = evalState (execWriterT part1) (st, M.empty)
   print (length (filter id highlows) * length (filter not highlows))
 
-runs = replicateM 1000 bfs
+part1 = replicateM 1000 bfs
 
 -- Parse into node and neighbours
 -- broadcaster -> a, b, c

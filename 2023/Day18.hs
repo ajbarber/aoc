@@ -8,10 +8,15 @@ import qualified Data.Vector as V
 import qualified Data.Set as S
 import Data.Char
 import Control.Monad.State
+import Control.Monad.Writer.Strict
 import Debug.Trace
 import Data.Maybe
 import Data.MemoTrie
 import Data.List
+import Data.Ord
+import Data.List.Extra
+import Day12 (safeHead)
+import Data.Tuple
 
 type Move = (String, String)
 --original graph before I realised a map was too inefficient
@@ -24,26 +29,26 @@ main :: IO ()
 main = do
   str <- readFile "Day18.txt"
   let moves = parseLine <$> lines str
-  print moves
-  -- part 1
+
+  -- Part 1
   let pt1graph' = fst $ foldl move (M.singleton (0,0) "#", (0,0)) moves
       (m,n) = max' pt1graph'
       (m0,n0) = min' pt1graph'
   let pt1graph2 = toVectors pt1graph'
---  let externals = length (nub $ sort $ bfs pt1graph2 (m0-1,n0-1) (m0-1,n0-1)) - 2*(1+m-m0 + (1+n-n0)) - 4
---  let orig = abs (1 + m - m0) * abs (1 + n - n0)
---  let part1 = orig - externals
+  let externals = length (nub $ sort $ bfs pt1graph2 (m0-1,n0-1) (m0-1,n0-1)) - 2*(1+m-m0 + (1+n-n0)) - 4
+  let orig = abs (1 + m - m0) * abs (1 + n - n0)
+  let part1 = orig - externals
+  print ("Original part 1" <> show part1)
+  let pt1coords = reverse $ movesToCoords moves
+  let part1' = shoelaceFormula pt1coords
+  print ("Revised part 1 " <> show part1')
 
-  --
+  -- Part 2
   let pt2moves = parseLine2 <$> lines str
-  let pt2coords = movesToCoords pt2moves
-  --let pt2graph' = fst $ foldl' move (M.singleton (0,0) "#", (0,0)) pt2moves
+  let pt2coords = reverse $ movesToCoords pt2moves
+  let part2 = shoelaceFormula pt2coords
+  print ("Part 2 " <> show part2)
 
- -- print orig
- -- print externals
- --3 print part1
-  print pt2moves
-  print pt2coords
 
 parseLine :: String -> Move
 parseLine str = let (y:z:zs) = words str in (y,z)
@@ -87,7 +92,7 @@ bfs :: Graph2 -> (Int, Int) -> (Int, Int) -> [(Int, Int)]
 bfs graph offset (i,j) = go graph offset [(i,j)] (S.singleton (i,j))
   where
     go g o [] visited = S.toList visited
-    go g o (q:qs) visited = let n = neighbours g offset q in trace (show $ length visited) go g o (S.toList (S.fromList n S.\\ visited)<> qs) (foldr S.insert visited [q])
+    go g o (q:qs) visited = let n = neighbours g offset q in go g o (S.toList (S.fromList n S.\\ visited)<> qs) (foldr S.insert visited [q])
 
 neighbours :: Graph2 -> (Int, Int) -> (Int, Int) -> [(Int, Int)]
 neighbours g (i0, j0) (i,j) =
@@ -136,7 +141,10 @@ parseMoveInner str = forM_ (zip [0..length str-1] str) \(i,a) -> do
   else when (i >= 2 && i< length str - 2) $ put (s1 <> [a], s2)
 
 parseLine2 :: String -> Move
-parseLine2 str = let (s1, s2) = execState (parseMoveInner str) ("","") in (direction s2, show $ parseHex s1)
+parseLine2 line = parseBlock $ last $ words line
+
+parseBlock :: String -> Move
+parseBlock str = let (s1, s2) = execState (parseMoveInner str) ("","") in (direction s2, show $ parseHex s1)
 
 -- we start at (0,0)
 -- next instruction is
@@ -144,18 +152,51 @@ parseLine2 str = let (s1, s2) = execState (parseMoveInner str) ("","") in (direc
 -- R 10000000, -> next coordinate is (1000000, 1000000)
 -- L 5000000 -> next coordinate is (500000, 1000000) and so on
 movesToCoords :: [(String, String)] -> [(Int, Int)]
-movesToCoords = scanl' (flip moveToCoord) (0,0)
+movesToCoords = scanl' (flip moveToCoord) (0, 0)
 
 moveToCoord :: (String, String) -> (Int, Int) -> (Int, Int)
-moveToCoord ("R", p) (m, n) = (m, n + read p)
-moveToCoord ("L", p) (m, n) = (m, n - read p)
-moveToCoord ("D", p) (m, n) = (m + read p, n)
-moveToCoord ("U", p) (m, n) = (m - read p, n)
+moveToCoord ("R", p) (m, n) = (m + read p, n)
+moveToCoord ("L", p) (m, n) = (m - read p, n)
+moveToCoord ("D", p) (m, n) = (m, n - read p)
+moveToCoord ("U", p) (m, n) = (m, n + read p)
 
--- area of polygon bound by vertices  (x_1, 0), (x_2, 0), (x_1, y_1), (x_2, y_2)
--- = 1/2 * (y_2 - y_1) * (x_1 + x_2)
--- shoelaceFormula :: [(Int, Int)] -> Int
--- shoelaceFormula xs = go xs
---    where
---      go [(x1,y1)] =
---      go (x1, y1):(x2, y2):_ = (y2 + y1) +
+-- Shoelace formula notes and working
+--
+-- x0123456
+-- 0#######
+-- 1#.....#
+-- 2###...#
+-- 3..#...#
+-- 4..#####
+
+-- Ans: 20
+
+-- x012345678
+-- 0#########
+-- 1#.......#
+-- 2#.......#
+-- 2####....#
+-- 3...#....#
+--- ...#....#
+-- 4...######
+
+-- should be 31
+-- Why? Shoelace not inclusive of rightmost and bottom most borders. It turns out that these borders are
+-- precisely half of the perimeter, due to the property of this being a loop. So just add back in half of
+-- the perimter
+
+-- example : [(0,0), (0,-2), (2,-2), (2,-4), (6,-4), (6,0)]
+
+distance :: [(Int, Int)] -> Int
+distance [] = 0
+distance [(x,y)] = 0
+distance ((x1,y1):(x2,y2):xys) = abs (x1- x2) + abs (y1 -y2) + distance ((x2,y2):xys)
+
+shoelaceFormula :: [(Int, Int)] ->Int
+shoelaceFormula xys = go xys
+  where
+      dy y1 y2 = y1 + y2
+      dx x1 x2 = x1 - x2
+      area x1 x2 y1 y2 = dy y1 y2*dx x1 x2 `div` 2
+      go [(x1,y1)] = 1 + distance xys `div` 2
+      go ((x1, y1):(x2, y2):rest) = area x1 x2 y1 y2 +  go ((x2,y2):rest)

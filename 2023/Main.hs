@@ -30,4 +30,4 @@ main = do
   -- Day7.main
   -- Day8.main
   -- Day9.main
-  Day19.main
+  Day18.main
