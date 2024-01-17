@@ -8,14 +8,10 @@ import qualified Data.Vector as V
 import qualified Data.Set as S
 import Data.Char
 import Control.Monad.State
-import Control.Monad.Writer.Strict
-import Debug.Trace
 import Data.Maybe
 import Data.MemoTrie
 import Data.List
-import Data.Ord
 import Data.List.Extra
-import Day12 (safeHead)
 import Data.Tuple
 
 type Move = (String, String)
