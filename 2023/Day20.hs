@@ -9,13 +9,12 @@ import Prelude
 import Control.Monad
 import Data.Bifunctor
 import qualified Data.Map as M
-import qualified Data.Set as S
 import Data.List.Extra
-import Data.Foldable
-import Debug.Trace
-import Control.Monad.State
+import Data.Either
+import Control.Monad.State.Strict
 import Data.Maybe
 import Control.Monad.Trans.Writer.Strict
+import Control.Monad.Extra
 
 data NodeType = Conjunction | Flip | Broadcast | Unknown deriving (Show,Eq)
 
@@ -33,9 +32,24 @@ main = do
   str <- readFile "Day20.txt"
   let st = foldl' parseLine M.empty (lines str)
   let highlows = evalState (execWriterT part1) (st, M.empty)
-  print (length (filter id highlows) * length (filter not highlows))
+  print ("Part 1 " <> show (length (filter id highlows) * length (filter not highlows)))
+  let rxInputs = parents st "rx"
+  let periods = (\m -> evalState (part2 m) (st, M.empty)) <$> rxInputs
+  print ("Part 2 " <> show (foldr lcm 1 periods))
 
-part1 = replicateM 1000 bfs
+part1 :: WriterT [Bool] (State NodeState) [Bool]
+part1 = replicateM 1000 (bfs Nothing)
+
+part2 :: String -> State NodeState Integer
+part2 mod = loopM (\i -> do
+                  (a,w) <- runWriterT (bfs (Just mod))
+                  pure $ if a then Right i
+                         else Left (i+1)) 1
+
+parents :: M.Map String Node -> String -> [String]
+parents m str = let node = m M.! str in
+     if length node.inputs > 1 then node.inputs
+     else parents m (head node.inputs)
 
 -- Parse into node and neighbours
 -- broadcaster -> a, b, c
@@ -63,12 +77,6 @@ toType "broadcaster" = (Broadcast, "broadcaster")
 toType ('&':xs) = (Conjunction, xs)
 toType ('%':xs) = (Flip, xs)
 
--- broadcaster -> a, b, c
--- %a -> b
--- %b -> c
--- %c -> inv
--- &inv -> a
-
 -- BFS on Nodes
 -- as we visit each node;
 -- if flip flop:
@@ -80,20 +88,23 @@ toType ('%':xs) = (Flip, xs)
 -- 2. if it remembers all high pulses for connected inputs -> send low pulse
 --    otherwise send high pulse
 
-bfs :: WriterT [Bool] (State NodeState) ()
-bfs = go [(False, "", "broadcaster")]
+-- Takes an optional argument specifying a module to
+-- test for a low signal output, and returns early if detected.
+-- Used in part2 for the cycle detection
+bfs :: Maybe String -> WriterT [Bool] (State NodeState) Bool
+bfs mod = go [(False, "", "broadcaster")]
   where
-    go :: [(Bool, String,String)] -> WriterT [Bool] (State NodeState) ()
-    go [] = return ()
+    go [] = return False
     go ((sig, i,c):queue) = do
       (ns, connections) <- lift get
       let cur = ns M.! c
           input = ns M.! i
           neighbours s = queue <> ((s,c,) <$> cur.outputs)
           connected = (\k -> M.lookup (k,c) connections) <$> cur.inputs
-      lift $ modify (second (M.insert (i, c) sig))
+      lift $  modify (second (M.insert (i, c) sig))
       tell [sig]
-      if cur.t == Flip && sig then go queue  --ignore high signal
+      if isJust mod && c == fromJust mod && not sig then pure True
+      else if cur.t == Flip && sig then go queue  --ignore high signal
       else if cur.t == Flip && cur.on then do
          switch c Off
          go (neighbours False)
@@ -105,8 +116,7 @@ bfs = go [(False, "", "broadcaster")]
          let connected = (\k -> M.lookup (k,c) connections') <$> cur.inputs
              allHigh = all (== Just True) connected in
              go (neighbours (not allHigh))
-      else do
-         go (neighbours sig)
+      else go (neighbours sig)
 
 switch :: String -> OnOff -> WriterT [Bool] (State NodeState) ()
 switch c on = lift $ modify (first (M.update (Just . \r -> r {on = on == On}) c))
