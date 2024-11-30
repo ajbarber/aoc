@@ -20,32 +20,27 @@ maintainer:         me@me.com
 -- copyright:
 -- category:
 
-executable aoc2023
+executable aoc2022
     main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
     -- other-modules:
     other-modules:
-        Day1,
-        Day2,
-        Day3,
-        Day4,
         Day5,
         Day6,
         Day7,
         Day8,
+        Day8Tardis,
         Day9,
         Day10,
+        Day10_2,
         Day11,
         Day12,
+        Day13,
         Day14,
-        Day15,
-        Day16,
         Day17,
         Day18,
-        Day19,
-        Day20
-
+        Day23
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
     build-depends:    base ==4.20.0.0,
