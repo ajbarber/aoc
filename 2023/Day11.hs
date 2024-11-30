@@ -3,6 +3,7 @@
 module Day11 where
 
 import Prelude
+import Control.Monad
 import Control.Monad.State.Strict
 import qualified Data.Vector as V
 import Data.Foldable

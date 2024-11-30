@@ -5,6 +5,7 @@ module Day10 where
 
 import Prelude
 import qualified Data.Map as M
+import Control.Monad
 import Control.Monad.State
 import Control.Monad.Trans.Writer.CPS
 import Data.Foldable

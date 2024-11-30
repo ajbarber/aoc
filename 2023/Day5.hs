@@ -4,6 +4,7 @@
 
 module Day5 where
 
+import Control.Monad
 import qualified Data.Map as M
 import qualified Data.IntMap as I
 import Data.Traversable

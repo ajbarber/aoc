@@ -7,6 +7,7 @@ import qualified Data.Map as M
 import qualified Data.Vector as V
 import qualified Data.Set as S
 import Data.Char
+import Control.Monad
 import Control.Monad.State
 import Data.Maybe
 import Data.MemoTrie
