@@ -1,8 +1,8 @@
 module Day10 where
 
 import Prelude
-import Control.Monad.State
-    ( forM_, modify, execState, MonadState(get), State )
+import Control.Monad (forM_)
+import Control.Monad.State (  modify, execState, MonadState(get), State )
 import Data.Char ()
 import Data.List ( find )
 import qualified Data.List.NonEmpty as NE

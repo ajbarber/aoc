@@ -4,6 +4,7 @@
 module Day14 where
 
 import Prelude
+import Control.Monad (ap)
 import Control.Monad.Loops
 import Control.Monad.State
 import Data.Char

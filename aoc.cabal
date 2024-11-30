@@ -50,20 +50,20 @@ executable aoc
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:    base ^>=4.17.0.0,
-                      vector ^>=0.13.0.0,
-                      QuickCheck ^>=2.14.2,
-                      containers ^>=0.6.6,
-                      transformers ^>= 0.5.6.2,
-                      mtl ^>=2.2.2,
-                      lens ^>=5.2,
-                      extra ^>=1.7.12,
-                      monad-loops ^>=0.4.3,
-                      tardis ^>=0.4.4,
-                      linear ^>=1.22,
-                      split ^>= 0.2.3.5,
-                      MemoTrie ^>= 0.6.10,
-                      monad-memo ^>= 0.5.4,
-                      parallel ^>= 3.2.2.0
-    hs-source-dirs:   2022, 2023
+    build-depends:    base ^>=4.20.0.0,
+                      vector,
+                      QuickCheck,
+                      containers,
+                      transformers,
+                      mtl,
+                      lens,
+                      extra,
+                      monad-loops,
+                      tardis,
+                      linear,
+                      split,
+                      MemoTrie,
+                      monad-memo,
+                      parallel
+    hs-source-dirs:   2022, 2023, 2024
     default-language: Haskell2010

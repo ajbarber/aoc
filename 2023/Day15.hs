@@ -4,6 +4,7 @@ module Day15 where
 import Prelude
 import Data.List.Extra
 import Data.Char
+import Control.Monad (forM_, liftM2)
 import qualified Data.Map as M
 import Control.Monad.State.Strict
 import Data.Maybe

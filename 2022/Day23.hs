@@ -5,6 +5,7 @@ import Prelude
 
 import Control.Arrow
 import Control.Applicative
+import Control.Monad (replicateM_)
 import Control.Monad.State
 import Control.Monad.Fail
 import Data.Function

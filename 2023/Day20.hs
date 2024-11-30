@@ -13,7 +13,7 @@ import Data.List.Extra
 import Data.Either
 import Control.Monad.State.Strict
 import Data.Maybe
-import Control.Monad.Trans.Writer.Strict
+import Control.Monad.Trans.Writer.CPS
 import Control.Monad.Extra
 
 data NodeType = Conjunction | Flip | Broadcast | Unknown deriving (Show,Eq)
@@ -36,9 +36,22 @@ main = do
   let rxInputs = parents st "rx"
   let periods = (\m -> evalState (part2 m) (st, M.empty)) <$> rxInputs
   print ("Part 2 " <> show (foldr lcm 1 periods))
+  --let res = evalState usesUpMemory "Hello"
+  --print res
 
 part1 :: WriterT [Bool] (State NodeState) [Bool]
 part1 = replicateM 1000 (bfs Nothing)
+
+usesUpMemory :: State String Int
+usesUpMemory = loopM (\i -> do
+                 (a,_) <- runWriterT test
+                 pure $ if a then Right i
+                        else  i `seq` Left (i+1)) 1
+
+doesntUseUpMemory :: StateT String IO a
+doesntUseUpMemory = loopM (\i -> do
+                 lift $ print i
+                 pure $ Left (i+1)) 1
 
 part2 :: String -> State NodeState Integer
 part2 mod = loopM (\i -> do
@@ -117,6 +130,14 @@ bfs mod = go [(False, "", "broadcaster")]
              allHigh = all (== Just True) connected in
              go (neighbours (not allHigh))
       else go (neighbours sig)
+
+
+test :: WriterT [Bool] (State String) Bool
+test = do
+  -- real version does some logic here and returns a True when conditions
+  -- are correct, otherwise continues to accumulate [Bool]'s
+  tell (replicate 1000 True)
+  pure False
 
 switch :: String -> OnOff -> WriterT [Bool] (State NodeState) ()
 switch c on = lift $ modify (first (M.update (Just . \r -> r {on = on == On}) c))

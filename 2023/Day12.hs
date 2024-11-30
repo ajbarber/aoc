@@ -41,7 +41,7 @@ compliant accum rules = let
   ours = map length parsed
   in (ours == rules)
 
-(|||) = liftM2 (||)
+(|||) = liftA2 (||)
 
 {-
 -| The 2d map represents a sort of chain starting at (0,0), the first character of the string

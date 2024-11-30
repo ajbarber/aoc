@@ -1,7 +1,7 @@
 module Day7 where
 
 import Prelude hiding (filter, lookup, foldr)
-import Control.Monad (foldM)
+import Control.Monad (foldM, forM_)
 import Control.Monad.State
 import Data.Map (Map, insert, adjust, empty, filter, foldl, lookup, foldr, foldrWithKey)
 import Data.Maybe (fromMaybe)

@@ -3,6 +3,7 @@
 module Day4 where
 
 import Prelude
+import Control.Monad (forM_)
 import Data.List.Extra
 import qualified Data.Set as S
 import qualified Data.IntMap as M
