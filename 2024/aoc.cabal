@@ -26,7 +26,9 @@ executable aoc2024
     -- Modules included in this executable, other than Main.
     -- other-modules:
     other-modules:
-        Day1
+        Day1,
+        Day2,
+        Day3
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
