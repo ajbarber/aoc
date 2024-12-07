@@ -28,24 +28,15 @@ executable aoc2024
     other-modules:
         Day1,
         Day2,
-        Day3
+        Day3,
+        Day4
+
+    build-depends:    base ^>=4.20.0.0,
+                      extra ^>= 1.8,
+                      containers ^>= 0.7,
+                      mtl ^>= 2.3.1
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:    base ==4.20.0.0,
-                      vector,
-                      QuickCheck,
-                      containers,
-                      transformers,
-                      mtl,
-                      lens,
-                      extra,
-                      monad-loops,
-                      tardis,
-                      linear,
-                      split,
-                      MemoTrie,
-                      monad-memo,
-                      parallel
     hs-source-dirs:
     default-language: Haskell2010
