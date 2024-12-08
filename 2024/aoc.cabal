@@ -30,7 +30,8 @@ executable aoc2024
         Day2,
         Day3,
         Day4,
-        Day5
+        Day5,
+        Day6
 
     build-depends:    base ^>=4.20.0.0,
                       extra ^>= 1.8,
